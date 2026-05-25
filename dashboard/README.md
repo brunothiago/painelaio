@@ -50,3 +50,4 @@ URL esperada: `https://SEU_USUARIO.github.io/painel_aio/`
 | `src/mapeador.js` | Converte CSV → formato do gráfico |
 | `src/App.jsx` | Carrega o CSV |
 | `public/aio_solicitacoes.csv` | Dados (atualizar via pipeline) |
+| `src/ExportarExcel.jsx` | Exportação .xlsx com seleção de colunas do banco |

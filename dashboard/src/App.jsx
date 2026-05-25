@@ -8,7 +8,7 @@ import React, { useEffect, useState } from 'react';
 import Papa from 'papaparse';
 import DashboardAIO from './DashboardAIO';
 import { mapearLinhasAIO } from './mapeador';
-import { dadosExemplo } from './dados-exemplo';
+import { dadosExemplo, linhasBrutasExemplo } from './dados-exemplo';
 
 const CSV_BASE = `${import.meta.env.BASE_URL}aio_solicitacoes.csv`;
 
@@ -33,6 +33,7 @@ function parseCsvText(text) {
 
 export default function App() {
   const [dados, setDados] = useState([]);
+  const [linhasBrutas, setLinhasBrutas] = useState([]);
   const [fonte, setFonte] = useState(null);
   const [erro, setErro] = useState(null);
   const [carregando, setCarregando] = useState(true);
@@ -60,9 +61,11 @@ export default function App() {
           setErro('CSV vazio — rode: python3 exportar_csv.py');
           setFonte('exemplo');
           setDados(dadosExemplo);
+          setLinhasBrutas(linhasBrutasExemplo);
           return;
         }
 
+        setLinhasBrutas(linhas);
         setDados(mapearLinhasAIO(linhas));
         setFonte('csv');
       } catch (e) {
@@ -70,6 +73,7 @@ export default function App() {
         setErro(`Não foi possível ler ${CSV_BASE} (${e.message})`);
         setFonte('exemplo');
         setDados(dadosExemplo);
+        setLinhasBrutas(linhasBrutasExemplo);
       } finally {
         if (!cancelado) setCarregando(false);
       }
@@ -126,7 +130,10 @@ export default function App() {
           Dados carregados de aio_solicitacoes.csv ({dados.length} registros)
         </div>
       )}
-      <DashboardAIO dados={dados.length ? dados : dadosExemplo} />
+      <DashboardAIO
+        dados={dados.length ? dados : dadosExemplo}
+        linhasBrutas={linhasBrutas.length ? linhasBrutas : linhasBrutasExemplo}
+      />
     </>
   );
 }

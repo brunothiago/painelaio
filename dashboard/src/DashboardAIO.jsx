@@ -32,6 +32,7 @@ import {
   ChevronLeft, ChevronRight as ChevRight,
 } from 'lucide-react';
 import { dadosExemplo } from './dados-exemplo';
+import ExportarExcel from './ExportarExcel';
 
 /* ============================================================================
    PALETA DE CORES — extraída do PPTX da PC nº 32/2024 (gov.br)
@@ -246,7 +247,7 @@ function SortableTh({ label, field, sortField, sortDir, onSort, align = 'left', 
 /* ============================================================================
    COMPONENTE PRINCIPAL
    ============================================================================ */
-export default function DashboardAIO({ dados = dadosExemplo }) {
+export default function DashboardAIO({ dados = dadosExemplo, linhasBrutas = [] }) {
   /* ---------- estado dos filtros e ordenação ---------- */
   const [busca, setBusca]         = useState('');
   const [filtroUF, setFiltroUF]   = useState([]);   // array vazio = sem filtro
@@ -947,6 +948,12 @@ export default function DashboardAIO({ dados = dadosExemplo }) {
                 </div>
               </div>
             )}
+
+            <ExportarExcel
+              linhasBrutas={linhasBrutas}
+              dadosFiltrados={dadosFiltrados}
+              filtrosAtivos={filtrosAtivos}
+            />
           </div>
         </section>
 

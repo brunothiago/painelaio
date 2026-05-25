@@ -137,3 +137,29 @@ export const dadosExemplo = [
     acao: '232000TI',
   },
 ];
+
+/** Linhas brutas (formato CSV/banco) para exportação Excel em modo demonstração */
+export const linhasBrutasExemplo = dadosExemplo.map((d) => ({
+  id: String(d.id),
+  instrumento: d.instrumento,
+  tc: d.tc,
+  recebedor: d.recebedor,
+  municipio_beneficiado: `${d.municipio.toUpperCase()}/${d.uf}`,
+  municipio: d.municipio.toUpperCase(),
+  uf: d.uf,
+  data_assinatura: d.dataAssinatura,
+  data_retirada_suspensiva: d.dataSuspensiva,
+  data_vigencia: d.dataVigencia,
+  valor_investimento: String(d.valorInvest),
+  valor_repasse: String(d.valorRepasse),
+  objeto: d.objeto,
+  programa_codigo: '',
+  programa_descricao: d.programa,
+  programa: d.programa,
+  acao_orcamentaria: d.acao,
+  email_remetente: 'GEPAC07 <GEPAC07@CAIXA.GOV.BR>',
+  email_assunto: '',
+  data_aio_recebido: d.dataAIO,
+  email_id: '',
+  criado_em: '',
+}));
