@@ -54,13 +54,20 @@ const C = {
   card:    '#FFFFFF',
 };
 
-/* mapa de cores por programa — usado em chips, donut e tabela */
+/* cores fixas para programas frequentes; demais usam paleta por hash do nome */
 const programaCores = {
-  'MCMV Sub 50':       C.blue,
+  'Minha Casa, Minha Vida - MCMV FNHIS Sub 50': C.blue,
+  'MCMV Sub 50': C.blue,
+  'Novo PAC - Mobilidade Urbana Sustentável: Mobilidade Grandes e Médias Cidades': C.purple,
   'Mobilidade Urbana': C.purple,
-  /* fallback: qualquer outro programa cai em C.blueLt */
 };
-const corPrograma = (p) => programaCores[p] || C.blueLt;
+const PALETA_PROGRAMA = [C.blue, C.purple, C.green, C.blueLt, '#7A1A8B'];
+const corPrograma = (nome) => {
+  if (programaCores[nome]) return programaCores[nome];
+  let h = 0;
+  for (let i = 0; i < nome.length; i++) h = (h * 31 + nome.charCodeAt(i)) >>> 0;
+  return PALETA_PROGRAMA[h % PALETA_PROGRAMA.length];
+};
 
 /* ============================================================================
    FORMATADORES

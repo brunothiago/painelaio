@@ -25,12 +25,23 @@
  * ============================================================================
  */
 
-/* Mapa de código de programa -> rótulo curto.
-   Atualize aqui quando novos programas forem incorporados ao Novo PAC. */
-const PROGRAMA_CURTO = {
-  '5600020250030': 'MCMV Sub 50',
-  '5600020240045': 'Mobilidade Urbana',
-};
+/**
+ * Rótulo do programa no painel (gráficos, chips, filtros).
+ * Prioriza o nome salvo no banco (programa_descricao); não usa "Outros" genérico.
+ */
+function rotuloPrograma(row) {
+  const descricao = String(row.programa_descricao ?? '').trim();
+  if (descricao) return descricao;
+
+  const programa = String(row.programa ?? '').trim();
+  if (programa) {
+    const semCodigo = programa.replace(/^\d{10,}\s*-\s*/, '').trim();
+    return semCodigo || programa;
+  }
+
+  const codigo = String(row.programa_codigo ?? '').trim();
+  return codigo ? `Programa ${codigo}` : 'Sem programa';
+}
 
 /** Capitaliza nome de município ('CACULÉ' -> 'Caculé') */
 const capitalize = (s = '') =>
@@ -58,7 +69,7 @@ export function mapearLinhaAIO(row) {
     uf:             (row.uf ?? '').toUpperCase(),
     objeto:         row.objeto ?? '',
     programa:       row.programa_descricao ?? row.programa ?? '',
-    programaCurto:  PROGRAMA_CURTO[String(row.programa_codigo)] ?? 'Outros',
+    programaCurto:  rotuloPrograma(row),
     valorInvest:    Number(row.valor_investimento ?? 0),
     valorRepasse:   Number(row.valor_repasse ?? 0),
     dataAssinatura: onlyDate(row.data_assinatura),

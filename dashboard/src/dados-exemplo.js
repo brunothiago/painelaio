@@ -42,7 +42,7 @@
  *    csv.uf                       -> uf
  *    csv.objeto                   -> objeto
  *    csv.programa_descricao       -> programa
- *    derivar de programa_codigo   -> programaCurto  (ver helper abaixo)
+ *    csv.programa_descricao       -> programaCurto  (nome do banco, via mapeador.js)
  *    Number(csv.valor_investimento)-> valorInvest
  *    Number(csv.valor_repasse)    -> valorRepasse
  *    csv.data_assinatura.slice(0,10) -> dataAssinatura
