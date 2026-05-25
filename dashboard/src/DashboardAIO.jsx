@@ -368,10 +368,17 @@ export default function DashboardAIO({ dados = dadosExemplo }) {
               <div>
                 <div className="flex items-center gap-3 mb-6">
                   <div
-                    className="flex h-9 w-9 items-center justify-center"
-                    style={{ background: C.navy, color: 'white', fontFamily: 'Fraunces', fontWeight: 500 }}
+                    className="flex h-9 px-2.5 items-center justify-center"
+                    style={{
+                      background: C.navy,
+                      color: 'white',
+                      fontFamily: 'Fraunces',
+                      fontWeight: 600,
+                      fontSize: 11,
+                      letterSpacing: '0.12em',
+                    }}
                   >
-                    M
+                    DMP
                   </div>
                   <div className="flex flex-col leading-tight">
                     <span className="text-[10px] tracking-[0.22em] uppercase font-semibold" style={{ color: C.navy }}>
@@ -809,6 +816,9 @@ export default function DashboardAIO({ dados = dadosExemplo }) {
                     <SortableTh field="valorRepasse" align="right" sortField={sortField} sortDir={sortDir} onSort={handleSort}>
                       Repasse
                     </SortableTh>
+                    <SortableTh field="dataAIO" sortField={sortField} sortDir={sortDir} onSort={handleSort}>
+                      Chegada AIO
+                    </SortableTh>
                     <SortableTh field="dataAssinatura" sortField={sortField} sortDir={sortDir} onSort={handleSort}>
                       Assinatura
                     </SortableTh>
@@ -823,7 +833,7 @@ export default function DashboardAIO({ dados = dadosExemplo }) {
                 <tbody>
                   {dadosPagina.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-4 py-12 text-center text-sm" style={{ color: C.muted }}>
+                      <td colSpan={8} className="px-4 py-12 text-center text-sm" style={{ color: C.muted }}>
                         Nenhum resultado encontrado com os filtros aplicados.
                       </td>
                     </tr>
@@ -864,6 +874,10 @@ export default function DashboardAIO({ dados = dadosExemplo }) {
                         {fmtBRLcompact(d.valorRepasse)}
                       </td>
                       <td className="px-4 py-3.5 border-b tabular-nums text-sm"
+                          style={{ borderColor: C.line, color: C.blue, fontWeight: 500 }}>
+                        {fmtData(d.dataAIO)}
+                      </td>
+                      <td className="px-4 py-3.5 border-b tabular-nums text-sm"
                           style={{ borderColor: C.line, color: C.text }}>
                         {fmtData(d.dataAssinatura)}
                       </td>
@@ -894,7 +908,7 @@ export default function DashboardAIO({ dados = dadosExemplo }) {
                           style={{ color: C.green, fontFamily: 'Fraunces' }}>
                         {fmtBRLcompact(totalFiltradoRepasse)}
                       </td>
-                      <td colSpan={3} />
+                      <td colSpan={4} />
                     </tr>
                   </tfoot>
                 )}
