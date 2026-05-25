@@ -16,6 +16,11 @@ no banco de dados** PostgreSQL.
 4. Os dados vão para o **banco** e, em seguida, para um **arquivo CSV**.
 5. O **painel na internet** (GitHub) lê esse CSV e mostra gráficos e tabelas.
 
+> **Atenção — dados públicos no site:** tudo que estiver em
+> `dashboard/public/aio_solicitacoes.csv` e for enviado ao GitHub fica **visível
+> para qualquer pessoa** no endereço do painel (GitHub Pages). Não coloque senhas
+> nem tokens nesse arquivo — só dados de solicitações AIO.
+
 ```
 Caixa (GEPAC07)
     → encaminha → cgpac.mcid@gmail.com
@@ -41,6 +46,32 @@ Caixa (GEPAC07)
 | **dashboard/** | Site do painel (publicar no GitHub) |
 | **MANUAL.md** | Este manual |
 | **com.mcid.aio_pipeline.plist** | Agendamento automático no Mac (opcional) |
+
+---
+
+## Segurança — o que nunca vai para o GitHub
+
+Estes arquivos ficam **somente no seu computador** (já estão no `.gitignore`):
+
+| Nunca commitar | Contém |
+|----------------|--------|
+| **config.env** | Senha do banco, tokens Gmail |
+| **credentials.json** | Chaves OAuth do Google Cloud |
+| **client_secret*.json** | Segredo do cliente OAuth |
+| **token.pickle** | Sessão antiga do Gmail (se existir) |
+| **.venv/** | Ambiente Python local |
+
+Antes de cada `git push`, confira no Terminal:
+
+```bash
+git status
+```
+
+Se aparecer `config.env` ou `credentials.json`, **não envie**. Peça ajuda à TI.
+
+**O que o GitHub publica de fato:** só o site em `dashboard/` (HTML, JS, CSS) e o
+**CSV** com solicitações AIO (municípios, valores, assuntos de email, etc.). O
+programa Python e o `config.env` **não** entram no site público.
 
 ---
 
@@ -90,7 +121,9 @@ Copie o modelo e preencha com os dados do PostgreSQL:
 cp config.env.example config.env
 ```
 
-Edite `config.env` com host, banco, usuário e senha. O schema padrão é `se_cgpac`.
+Edite `config.env` com os dados que a **TI** passar (`DB_HOST`, `DB_NAME`,
+`DB_USER`, `DB_PASSWORD`). Não copie esse arquivo para email, WhatsApp nem GitHub.
+O schema padrão é `se_cgpac`.
 
 ### Passo 3 — Criar a tabela
 
@@ -180,13 +213,18 @@ Abra o endereço que o terminal mostrar (geralmente http://localhost:5173).
 
 ### Publicar o painel no GitHub
 
-1. Crie um repositório chamado **painel_aio** no GitHub.
-2. Rode `./rodar_fluxo_completo.sh 7` na sua máquina (com VPN do banco).
-3. Envie os arquivos para o GitHub (`git push`), **incluindo o CSV**.
-4. No GitHub: Settings → Pages → ative **GitHub Actions**.
-5. O site ficará em: `https://SEU_USUARIO.github.io/painel_aio/`
+1. Repositório **painel_aio** no GitHub (público ou privado — o **site** em Pages
+   continua público se o repositório for público e o Pages estiver ativo).
+2. Rode `./rodar_fluxo_completo.sh 7` na sua máquina (com VPN, se a TI exigir).
+3. Antes do `git push`, confira que **só** entram arquivos do projeto e o CSV —
+   **nunca** `config.env` nem `credentials.json`.
+4. O commit pode incluir `dashboard/public/aio_solicitacoes.csv` (dados AIO
+   **públicos no painel** — revise se está confortável com o conteúdo).
+5. Push → GitHub Actions publica o site. URL típica:
+   `https://SEU_USUARIO.github.io/painel_aio/`
 
-Detalhes técnicos: [dashboard/README.md](dashboard/README.md)
+Detalhes técnicos: [dashboard/README.md](dashboard/README.md) e [README.md](README.md)
+(seção Segurança).
 
 ---
 
@@ -225,7 +263,8 @@ Rode de novo `python3 gerar_token.py` (pode precisar revogar o app em
 myaccount.google.com/permissions).
 
 **Preciso de VPN?**  
-Sim, para acessar o banco `campinas.cidades.gov.br` (rede MCID).
+Em geral sim, para alcançar o **servidor PostgreSQL da rede MCID** (host e
+credenciais vêm da TI no `config.env`, não devem aparecer neste manual nem no GitHub).
 
 ---
 

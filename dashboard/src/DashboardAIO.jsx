@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- *  DashboardAIO — Painel de Autorizações de Início do Objeto
+ *  DashboardAIO — Painel de AIO
  *  Ministério das Cidades · DMP/SE · Novo PAC
  * ----------------------------------------------------------------------------
  *  Componente único e autocontido. Recebe a lista de solicitações AIO via
@@ -396,9 +396,8 @@ export default function DashboardAIO({ dados = dadosExemplo }) {
                 >
                   Painel de{' '}
                   <em style={{ fontStyle: 'italic', fontWeight: 400, color: C.blue }}>
-                    Autorizações
+                    AIO
                   </em>
-                  <br />de Início do Objeto
                 </h1>
 
                 <div className="mt-4 flex items-center gap-6 text-sm" style={{ color: C.muted }}>

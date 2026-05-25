@@ -2,6 +2,10 @@
 
 Dashboard React para GitHub Pages. Lê `public/aio_solicitacoes.csv` gerado pelo Python.
 
+**Privacidade:** o CSV versionado e publicado no Pages fica **acessível na internet**
+(municípios, valores, assuntos de email AIO). Não inclua senhas, tokens ou dados
+pessoais no CSV. Credenciais ficam só em `config.env` na máquina local.
+
 ## Fluxo
 
 ```

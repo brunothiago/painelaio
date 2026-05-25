@@ -12,6 +12,30 @@ Fluxo integrado: **Gmail (GEPAC07)** → **PostgreSQL** → **CSV** → **dashbo
 **Manual para usuários:** [MANUAL.md](MANUAL.md)  
 **Manual do dashboard:** [dashboard/README.md](dashboard/README.md)
 
+## Segurança e o que fica público
+
+| Onde | O que expõe |
+|------|-------------|
+| **Sua máquina** | `config.env` (senha DB, tokens Gmail), `credentials.json` — **nunca** no Git |
+| **Repositório GitHub** | Código Python, dashboard, `aio_solicitacoes.csv` (sem credenciais) |
+| **GitHub Pages** | Só o build do `dashboard/` + CSV baixável por qualquer visitante |
+
+Arquivos ignorados pelo Git (ver `.gitignore`): `config.env`, `credentials.json`,
+`client_secret*.json`, `token.pickle`, `.venv/`.
+
+Antes de cada push:
+
+```bash
+git status   # não deve listar config.env
+```
+
+O CSV em `dashboard/public/aio_solicitacoes.csv` contém **dados operacionais de
+AIO** (município, TC, valores, assunto do email, etc.). Só faça commit/push se
+aceitar que isso fique **público** em `https://SEU_USUARIO.github.io/painel_aio/`.
+
+Se `config.env` ou tokens forem commitados por engano: remova do Git, **rotacione**
+senha do banco e gere novo token Gmail (`gerar_token.py`).
+
 ## Estrutura
 
 ```
@@ -44,7 +68,10 @@ cd dashboard && npm install && npm run dev
 
 ## Publicar no GitHub
 
-1. Crie o repositório **painel_aio** no GitHub.
-2. Rode localmente: `./rodar_fluxo_completo.sh 7`
-3. Commit incluindo `dashboard/public/aio_solicitacoes.csv`
-4. Push → GitHub Actions publica em `https://usuario.github.io/painel_aio/`
+1. Repositório **painel_aio** no GitHub.
+2. Rode localmente: `./rodar_fluxo_completo.sh 7` (VPN se necessário para o banco).
+3. `git status` — confirme que `config.env` **não** está na lista.
+4. Commit incluindo `dashboard/public/aio_solicitacoes.csv` (dados **públicos** no Pages).
+5. Push → GitHub Actions publica em `https://SEU_USUARIO.github.io/painel_aio/`
+
+Site publicado (exemplo): https://brunothiago.github.io/painel_aio/
