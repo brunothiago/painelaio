@@ -33,6 +33,8 @@ import {
 } from 'lucide-react';
 import { dadosExemplo } from './dados-exemplo';
 import ExportarExcel from './ExportarExcel';
+import FiltrosGerais from './FiltrosGerais';
+import { semanaAioKey, listarSemanasOpcoes } from './filtros-tempo';
 
 /* ============================================================================
    PALETA DE CORES — extraída do PPTX da PC nº 32/2024 (gov.br)
@@ -256,6 +258,8 @@ function SortableTh({ label, field, sortField, sortDir, onSort, align = 'left', 
    ============================================================================ */
 export default function DashboardAIO({ dados = dadosExemplo, linhasBrutas = [] }) {
   /* ---------- estado dos filtros e ordenação ---------- */
+  const [filtroGlobalProg, setFiltroGlobalProg] = useState([]);
+  const [filtroGlobalSemana, setFiltroGlobalSemana] = useState([]);
   const [busca, setBusca]         = useState('');
   const [filtroUF, setFiltroUF]   = useState([]);   // array vazio = sem filtro
   const [filtroProg, setFiltroProg] = useState([]);
@@ -265,18 +269,36 @@ export default function DashboardAIO({ dados = dadosExemplo, linhasBrutas = [] }
   const [selecionado, setSelecionado] = useState(null);
   const POR_PAGINA = 10;
 
-  /* ---------- agregações ---------- */
-  const totalInvest  = dados.reduce((s, d) => s + d.valorInvest, 0);
-  const totalRepasse = dados.reduce((s, d) => s + d.valorRepasse, 0);
-  const ufsUnicas    = useMemo(() => [...new Set(dados.map((d) => d.uf))].sort(), [dados]);
-  const programasUnicos = useMemo(
+  /* ---------- filtros globais (topo do painel) ---------- */
+  const programasOpcoes = useMemo(
     () => [...new Set(dados.map((d) => d.programaCurto))].sort(),
     [dados]
+  );
+  const semanasOpcoes = useMemo(() => listarSemanasOpcoes(dados), [dados]);
+
+  const dadosBase = useMemo(() => {
+    return dados.filter((d) => {
+      if (filtroGlobalProg.length && !filtroGlobalProg.includes(d.programaCurto)) return false;
+      if (filtroGlobalSemana.length) {
+        const sk = semanaAioKey(d.dataAIO)?.key;
+        if (!sk || !filtroGlobalSemana.includes(sk)) return false;
+      }
+      return true;
+    });
+  }, [dados, filtroGlobalProg, filtroGlobalSemana]);
+
+  /* ---------- agregações (sobre base filtrada globalmente) ---------- */
+  const totalInvest  = dadosBase.reduce((s, d) => s + d.valorInvest, 0);
+  const totalRepasse = dadosBase.reduce((s, d) => s + d.valorRepasse, 0);
+  const ufsUnicas    = useMemo(() => [...new Set(dadosBase.map((d) => d.uf))].sort(), [dadosBase]);
+  const programasUnicos = useMemo(
+    () => [...new Set(dadosBase.map((d) => d.programaCurto))].sort(),
+    [dadosBase]
   );
 
   const porPrograma = useMemo(
     () => Object.values(
-      dados.reduce((acc, d) => {
+      dadosBase.reduce((acc, d) => {
         acc[d.programaCurto] = acc[d.programaCurto] || {
           name: d.programaCurto, value: 0, valor: 0,
         };
@@ -285,24 +307,24 @@ export default function DashboardAIO({ dados = dadosExemplo, linhasBrutas = [] }
         return acc;
       }, {})
     ),
-    [dados]
+    [dadosBase]
   );
 
   const porUF = useMemo(
     () => Object.values(
-      dados.reduce((acc, d) => {
+      dadosBase.reduce((acc, d) => {
         acc[d.uf] = acc[d.uf] || { uf: d.uf, qtd: 0, valor: 0 };
         acc[d.uf].qtd += 1;
         acc[d.uf].valor += d.valorInvest;
         return acc;
       }, {})
     ).sort((a, b) => b.valor - a.valor),
-    [dados]
+    [dadosBase]
   );
 
-  /* ---------- aplicação de filtros + ordenação ---------- */
+  /* ---------- filtros da tabela + ordenação ---------- */
   const dadosFiltrados = useMemo(() => {
-    let lista = dados.filter((d) => {
+    let lista = dadosBase.filter((d) => {
       if (filtroUF.length && !filtroUF.includes(d.uf)) return false;
       if (filtroProg.length && !filtroProg.includes(d.programaCurto)) return false;
       if (busca) {
@@ -326,7 +348,7 @@ export default function DashboardAIO({ dados = dadosExemplo, linhasBrutas = [] }
         : String(vb).localeCompare(String(va));
     });
     return lista;
-  }, [dados, filtroUF, filtroProg, busca, sortField, sortDir]);
+  }, [dadosBase, filtroUF, filtroProg, busca, sortField, sortDir]);
 
   const totalPaginas = Math.max(1, Math.ceil(dadosFiltrados.length / POR_PAGINA));
   const paginaAtual  = Math.min(pagina, totalPaginas);
@@ -343,10 +365,20 @@ export default function DashboardAIO({ dados = dadosExemplo, linhasBrutas = [] }
     if (sortField === field) setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
     else { setSortField(field); setSortDir('desc'); }
   };
-  const resetFiltros = () => {
-    setBusca(''); setFiltroUF([]); setFiltroProg([]); setPagina(1);
+  const resetFiltrosGlobais = () => {
+    setFiltroGlobalProg([]);
+    setFiltroGlobalSemana([]);
+    setPagina(1);
   };
-  const filtrosAtivos = busca || filtroUF.length || filtroProg.length;
+  const resetFiltros = () => {
+    setBusca('');
+    setFiltroUF([]);
+    setFiltroProg([]);
+    setPagina(1);
+  };
+  const filtrosGlobaisAtivos = filtroGlobalProg.length > 0 || filtroGlobalSemana.length > 0;
+  const filtrosAtivos =
+    busca || filtroUF.length || filtroProg.length || filtrosGlobaisAtivos;
 
   /* ========================================================================
      RENDER
@@ -445,14 +477,31 @@ export default function DashboardAIO({ dados = dadosExemplo, linhasBrutas = [] }
           </div>
         </header>
 
+        <FiltrosGerais
+          programasOpcoes={programasOpcoes}
+          semanasOpcoes={semanasOpcoes}
+          filtroPrograma={filtroGlobalProg}
+          setFiltroPrograma={(v) => { setFiltroGlobalProg(v); setPagina(1); }}
+          filtroSemana={filtroGlobalSemana}
+          setFiltroSemana={(v) => { setFiltroGlobalSemana(v); setPagina(1); }}
+          totalBase={dados.length}
+          totalFiltrado={dadosBase.length}
+          onLimpar={resetFiltrosGlobais}
+          corPrograma={corPrograma}
+        />
+
         {/* ================ KPIs ================ */}
         <section className="mx-auto max-w-[1280px] px-8 py-10">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <KPI
               icon={FileSignature}
               label="Solicitações AIO"
-              value={String(dados.length).padStart(2, '0')}
-              sub="Termos de Compromisso pendentes de análise"
+              value={String(dadosBase.length).padStart(2, '0')}
+              sub={
+                filtrosGlobaisAtivos
+                  ? `${dadosBase.length} de ${dados.length} na base (filtro geral)`
+                  : 'Termos de Compromisso pendentes de análise'
+              }
               accent={C.blue}
             />
             <KPI
@@ -573,7 +622,7 @@ export default function DashboardAIO({ dados = dadosExemplo, linhasBrutas = [] }
           </SectionTitle>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {dados.map((d) => {
+            {dadosBase.map((d) => {
               const isOpen = selecionado === d.id;
               const repassePct = (d.valorRepasse / d.valorInvest) * 100;
               const diasSuspensiva = diasEntre(d.dataAssinatura, d.dataSuspensiva);
@@ -756,7 +805,7 @@ export default function DashboardAIO({ dados = dadosExemplo, linhasBrutas = [] }
                     <span style={{ color: C.navy, fontWeight: 600 }}>
                       {dadosFiltrados.length}
                     </span>
-                    {' '}de {dados.length} solicitações
+                    {' '}de {dadosBase.length} solicitações
                   </span>
                   {filtrosAtivos && (
                     <button
