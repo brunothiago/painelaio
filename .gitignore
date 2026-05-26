@@ -1,0 +1,13 @@
+.env
+config.env
+client_secret*.json
+credentials.json
+token.pickle
+__pycache__/
+*.pyc
+.venv/
+venv/
+dashboard/node_modules/
+dashboard/dist/
+files_dasboard/
+*.zip

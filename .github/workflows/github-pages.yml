@@ -1,0 +1,54 @@
+# Publica o dashboard em GitHub Pages quando o CSV ou o front mudar.
+# O pipeline Gmail/banco roda na máquina local (config.env não vai para o Git).
+
+name: Deploy painel AIO
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verificar CSV do painel
+        run: |
+          LINHAS=$(($(wc -l < dashboard/public/aio_solicitacoes.csv) - 1))
+          echo "Registros AIO no CSV: $LINHAS"
+          test "$LINHAS" -gt 0
+
+      - name: Instalar e build
+        working-directory: dashboard
+        run: |
+          npm install
+          npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dashboard/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
