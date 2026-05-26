@@ -6,10 +6,6 @@ name: Deploy painel AIO
 on:
   push:
     branches: [main, master]
-    paths:
-      - 'dashboard/**'
-      - 'exportar_csv.py'
-      - '.github/workflows/github-pages.yml'
   workflow_dispatch:
 
 permissions:
@@ -30,6 +26,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Verificar CSV do painel
+        run: |
+          LINHAS=$(($(wc -l < dashboard/public/aio_solicitacoes.csv) - 1))
+          echo "Registros AIO no CSV: $LINHAS"
+          test "$LINHAS" -gt 0
 
       - name: Instalar e build
         working-directory: dashboard
