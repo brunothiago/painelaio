@@ -1,29 +1,18 @@
 #!/bin/bash
-# Fluxo completo: Gmail → banco → CSV → build do site (GitHub Pages)
+# Fluxo completo: Gmail → PostgreSQL → painel HTML → publica no GitHub Pages.
 set -e
 cd "$(dirname "$0")"
 source .venv/bin/activate
 
 DIAS="${1:-7}"
-echo "=== 1/3 Pipeline Gmail → PostgreSQL ==="
-python3 aio_pipeline.py --dias "$DIAS" --atualizar --export-csv
+echo "=== 1/2 Varredura Gmail → PostgreSQL ==="
+python3 aio_pipeline.py --dias "$DIAS" --atualizar
 
 echo ""
-echo "=== 2/3 CSV em dashboard/public/aio_solicitacoes.csv ==="
-ls -la dashboard/public/aio_solicitacoes.csv
+echo "=== 2/2 Gerar painel a partir do banco ==="
+python3 painel/gerar_painel.py --saida docs/index.html
 
-echo ""
-echo "=== 3/4 Build do dashboard ==="
-cd dashboard
-npm install
-npm run build
-cd ..
-
-echo ""
-echo "=== 4/4 Painel HTML de acompanhamento ==="
-python3 painel/gerar_painel.py
 echo ""
 echo "Pronto."
-echo "  Dashboard: cd dashboard && npm run preview"
-echo "  Painel AIO: open painel/painel_aio.html"
-echo "  Publicar: git add dashboard/public/aio_solicitacoes.csv && git push"
+echo "  Pré-visualizar: open docs/index.html"
+echo "  Publicar:       ./publicar_painel_manual.sh   (ou: git add docs/index.html && git commit && git push)"

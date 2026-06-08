@@ -13,20 +13,20 @@ no banco de dados** PostgreSQL.
 3. Um programa (`aio_pipeline.py`) entra nessa caixa, **lê o texto dentro do
    encaminhamento** (não a data do encaminhamento em si) e copia os dados para
    uma **tabela no banco**, chamada `se_cgpac.aio_solicitacoes`.
-4. Os dados vão para o **banco** e, em seguida, para um **arquivo CSV**.
-5. O **painel na internet** (GitHub) lê esse CSV e mostra gráficos e tabelas.
+4. Os dados vão para o **banco**.
+5. Um gerador monta o **painel na internet** (GitHub Pages) — uma linha do tempo
+   das 10 etapas de cada AIO — direto a partir do banco.
 
-> **Atenção — dados públicos no site:** tudo que estiver em
-> `dashboard/public/aio_solicitacoes.csv` e for enviado ao GitHub fica **visível
-> para qualquer pessoa** no endereço do painel (GitHub Pages). Não coloque senhas
-> nem tokens nesse arquivo — só dados de solicitações AIO.
+> **Atenção — dados públicos no site:** o painel publicado (`docs/index.html`)
+> embute os dados de AIO e fica **visível para qualquer pessoa** no endereço do
+> painel (GitHub Pages). Não há credenciais nesse arquivo — só dados de solicitações AIO.
 
 ```
 Caixa (GEPAC07)
     → encaminha → cgpac.mcid@gmail.com
     → aio_pipeline.py → banco PostgreSQL
-    → exportar_csv.py → arquivo CSV
-    → site dashboard → GitHub Pages (painel_aio)
+    → painel/gerar_painel.py → docs/index.html
+    → GitHub Pages (painelaio)
 ```
 
 ---
@@ -41,9 +41,10 @@ Caixa (GEPAC07)
 | **config.env** | Senhas e configurações (banco + Gmail) — **não compartilhar** |
 | **config.env.example** | Modelo vazio do config.env |
 | **requirements.txt** | Lista de bibliotecas Python (instalação técnica) |
-| **exportar_csv.py** | Exporta a tabela para CSV do painel |
-| **rodar_fluxo_completo.sh** | Roda pipeline + CSV + build do site |
-| **dashboard/** | Site do painel (publicar no GitHub) |
+| **migrar_colunas_etapas.py** | Adiciona as colunas das etapas 2–10 — **só uma vez** |
+| **rodar_fluxo_completo.sh** | Roda pipeline + gera o painel |
+| **painel/** | Gerador do painel (`gerar_painel.py` + template) |
+| **publicar_painel_manual.sh** | Gera o painel e publica no GitHub Pages |
 | **MANUAL.md** | Este manual |
 | **com.mcid.aio_pipeline.plist** | Agendamento automático no Mac (opcional) |
 
@@ -69,9 +70,9 @@ git status
 
 Se aparecer `config.env` ou `credentials.json`, **não envie**. Peça ajuda à TI.
 
-**O que o GitHub publica de fato:** só o site em `dashboard/` (HTML, JS, CSS) e o
-**CSV** com solicitações AIO (municípios, valores, assuntos de email, etc.). O
-programa Python e o `config.env` **não** entram no site público.
+**O que o GitHub publica de fato:** só o painel em `docs/index.html` (um HTML com
+as solicitações AIO embutidas — municípios, valores, etapas, etc.). O programa
+Python e o `config.env` **não** entram no site público.
 
 ---
 
@@ -181,50 +182,35 @@ python3 aio_pipeline.py --dias 7 --atualizar
 python3 aio_pipeline.py
 ```
 
-### Atualizar banco e CSV do painel (recomendado)
+### Atualizar banco e painel (recomendado)
 
 ```bash
-python3 aio_pipeline.py --dias 7 --atualizar --export-csv
+python3 aio_pipeline.py --dias 30 --atualizar
+python3 painel/gerar_painel.py --saida docs/index.html
 ```
 
 Ou tudo de uma vez:
 
 ```bash
-./rodar_fluxo_completo.sh 7
+./rodar_fluxo_completo.sh 30
 ```
-
-### Só gerar o CSV (sem ler email de novo)
-
-```bash
-python3 exportar_csv.py
-```
-
-O arquivo fica em: `dashboard/public/aio_solicitacoes.csv`
 
 ### Ver o painel no computador
 
 ```bash
-cd dashboard
-npm install
-npm run dev
+open docs/index.html
 ```
-
-Abra o endereço que o terminal mostrar (geralmente http://localhost:5173).
 
 ### Publicar o painel no GitHub
 
-1. Repositório **painel_aio** no GitHub (público ou privado — o **site** em Pages
-   continua público se o repositório for público e o Pages estiver ativo).
-2. Rode `./rodar_fluxo_completo.sh 7` na sua máquina (com VPN, se a TI exigir).
-3. Antes do `git push`, confira que **só** entram arquivos do projeto e o CSV —
-   **nunca** `config.env` nem `credentials.json`.
-4. O commit pode incluir `dashboard/public/aio_solicitacoes.csv` (dados AIO
-   **públicos no painel** — revise se está confortável com o conteúdo).
-5. Push → GitHub Actions publica o site. URL típica:
-   `https://SEU_USUARIO.github.io/painelaio/`
+1. Repositório **painelaio** no GitHub (Pages: branch `main`, pasta `/docs`).
+2. Rode `./rodar_fluxo_completo.sh 30` na sua máquina (com VPN, se a TI exigir).
+3. Antes do `git push`, confira que **nunca** entram `config.env` nem `credentials.json`.
+4. Publique com `./publicar_painel_manual.sh` (gera `docs/index.html`, faz commit e push).
+   O `docs/index.html` traz dados AIO **públicos no painel** — revise se está confortável.
+5. O GitHub Pages serve `docs/` direto da `main`; o site atualiza em ~1–3 min.
 
-Detalhes técnicos: [dashboard/README.md](dashboard/README.md) e [README.md](README.md)
-(seção Segurança).
+Detalhes técnicos: [README.md](README.md) (seção Segurança).
 
 ---
 
@@ -278,5 +264,5 @@ técnico ou peça à TI.
 
 ## Resumo em uma frase
 
-> O sistema lê emails GEPAC07, grava no banco, exporta um CSV e alimenta o
-> **painel_aio** publicado no GitHub.
+> O sistema lê emails GEPAC07, grava no banco e gera o **painel de linha do tempo**
+> (`painelaio`) publicado no GitHub Pages.

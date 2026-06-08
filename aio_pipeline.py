@@ -456,7 +456,7 @@ def insert_aio(conn, record: dict, atualizar: bool = False) -> int | None:
 # 6. PIPELINE PRINCIPAL — busca Gmail, extrai, grava
 # =============================================================================
 
-def run_pipeline(dias: int = 2, dry_run: bool = False, atualizar: bool = False, export_csv: bool = False):
+def run_pipeline(dias: int = 2, dry_run: bool = False, atualizar: bool = False):
     log.info("=" * 60)
     log.info("PIPELINE AIO | dry_run=%s | dias=%s | schema=%s", dry_run, dias, DB_SCHEMA)
     log.info("=" * 60)
@@ -579,23 +579,13 @@ def run_pipeline(dias: int = 2, dry_run: bool = False, atualizar: bool = False, 
     )
     log.info("=" * 60)
 
-    if export_csv and not dry_run:
-        try:
-            from exportar_csv import exportar_csv
-
-            path = exportar_csv()
-            log.info("CSV do dashboard gerado: %s", path)
-        except Exception as e:
-            log.error("Falha ao exportar CSV: %s", e)
-            sys.exit(1)
-
 
 # =============================================================================
 # 7. LINHA DE COMANDO
 # =============================================================================
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Pipeline AIO — Gmail → PostgreSQL → CSV")
+    parser = argparse.ArgumentParser(description="Pipeline AIO — Gmail → PostgreSQL")
     parser.add_argument("--dry-run", action="store_true", help="Extrai sem gravar no banco.")
     parser.add_argument(
         "--dias",
@@ -608,15 +598,9 @@ if __name__ == "__main__":
         action="store_true",
         help="Atualiza registros existentes (mesmo email_id) com dados reprocessados.",
     )
-    parser.add_argument(
-        "--export-csv",
-        action="store_true",
-        help="Após gravar no banco, gera dashboard/public/aio_solicitacoes.csv",
-    )
     args = parser.parse_args()
     run_pipeline(
         dias=args.dias,
         dry_run=args.dry_run,
         atualizar=args.atualizar,
-        export_csv=args.export_csv,
     )

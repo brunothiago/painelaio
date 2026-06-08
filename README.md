@@ -1,24 +1,26 @@
 # Pipeline AIO + Painel web
 
-Fluxo integrado: **Gmail (GEPAC07)** → **PostgreSQL** → **CSV** → **dashboard** (GitHub Pages).
+Fluxo integrado: **Gmail (GEPAC07)** → **PostgreSQL** → **painel HTML** (GitHub Pages).
 
 | Etapa | Ferramenta |
 |-------|------------|
 | 1. Ler emails | `aio_pipeline.py` |
 | 2. Banco | `se_cgpac.aio_solicitacoes` |
-| 3. CSV | `exportar_csv.py` ou `--export-csv` |
-| 4. Site | pasta `dashboard/` → GitHub Pages |
+| 3. Painel | `painel/gerar_painel.py` → `docs/index.html` |
+| 4. Site | GitHub Pages (pasta `docs/`, repo `painelaio`) |
 
-**Manual para usuários:** [MANUAL.md](MANUAL.md)  
-**Manual do dashboard:** [dashboard/README.md](dashboard/README.md)
+O painel é um **HTML estático autossuficiente** (linha do tempo de 10 etapas, PC 32/2024)
+que embute os dados do banco — não há CSV nem busca em runtime.
+
+**Manual para usuários:** [MANUAL.md](MANUAL.md)
 
 ## Segurança e o que fica público
 
 | Onde | O que expõe |
 |------|-------------|
 | **Sua máquina** | `config.env` (senha DB, tokens Gmail), `credentials.json` — **nunca** no Git |
-| **Repositório GitHub** | Código Python, dashboard, `aio_solicitacoes.csv` (sem credenciais) |
-| **GitHub Pages** | Só o build do `dashboard/` + CSV baixável por qualquer visitante |
+| **Repositório GitHub** | Código Python e `docs/index.html` (painel com dados AIO, sem credenciais) |
+| **GitHub Pages** | Só o painel em `docs/` — visível por qualquer visitante |
 
 Arquivos ignorados pelo Git (ver `.gitignore`): `config.env`, `credentials.json`,
 `client_secret*.json`, `token.pickle`, `.venv/`.
@@ -29,9 +31,9 @@ Antes de cada push:
 git status   # não deve listar config.env
 ```
 
-O CSV em `dashboard/public/aio_solicitacoes.csv` contém **dados operacionais de
-AIO** (município, TC, valores, assunto do email, etc.). Só faça commit/push se
-aceitar que isso fique **público** em `https://SEU_USUARIO.github.io/painelaio/`.
+O `docs/index.html` embute **dados operacionais de AIO** (município, TC, valores,
+etapas, etc.). Só faça commit/push se aceitar que isso fique **público** em
+`https://SEU_USUARIO.github.io/painelaio/`.
 
 Se `config.env` ou tokens forem commitados por engano: remova do Git, **rotacione**
 senha do banco e gere novo token Gmail (`gerar_token.py`).
@@ -40,16 +42,17 @@ senha do banco e gere novo token Gmail (`gerar_token.py`).
 
 ```
 painel_aio/
-├── aio_pipeline.py          # programa principal
-├── exportar_csv.py          # banco → CSV
-├── gerar_token.py           # setup Gmail (1x)
+├── aio_pipeline.py          # programa principal (Gmail → banco)
+├── gerar_token.py           # setup Gmail (1x, login no navegador)
 ├── setup_tabela.py          # setup banco (1x)
-├── rodar_fluxo_completo.sh  # executa tudo de uma vez
+├── migrar_colunas_etapas.py # adiciona colunas das etapas 2–10
+├── rodar_fluxo_completo.sh  # Gmail → banco → painel
+├── publicar_painel_manual.sh# gera painel e publica no Pages
 ├── config.env
-├── dashboard/               # site React (painel_aio no GitHub)
-│   ├── public/aio_solicitacoes.csv
-│   └── src/
-└── .github/workflows/       # deploy GitHub Pages
+├── painel/                  # gerador do painel
+│   ├── gerar_painel.py
+│   └── template_painel.html
+└── docs/                    # o que o GitHub Pages serve (index.html = painel)
 ```
 
 ## Comandos rápidos
@@ -57,21 +60,20 @@ painel_aio/
 ```bash
 source .venv/bin/activate
 
-# Fluxo completo (7 dias + CSV + build)
-./rodar_fluxo_completo.sh 7
+# Fluxo completo (30 dias: Gmail → banco → painel)
+./rodar_fluxo_completo.sh 30
 
 # Ou passo a passo:
-python3 aio_pipeline.py --dias 7 --atualizar --export-csv
-python3 exportar_csv.py
-cd dashboard && npm install && npm run dev
+python3 aio_pipeline.py --dias 30 --atualizar
+python3 painel/gerar_painel.py --saida docs/index.html
 ```
 
 ## Publicar no GitHub
 
-1. Repositório **painel_aio** no GitHub.
-2. Rode localmente: `./rodar_fluxo_completo.sh 7` (VPN se necessário para o banco).
+1. Repositório **painelaio** no GitHub (Pages: branch `main`, pasta `/docs`).
+2. Rode localmente: `./rodar_fluxo_completo.sh 30` (VPN se necessário para o banco).
 3. `git status` — confirme que `config.env` **não** está na lista.
-4. Commit incluindo `dashboard/public/aio_solicitacoes.csv` (dados **públicos** no Pages).
-5. Push → GitHub Actions publica em `https://SEU_USUARIO.github.io/painelaio/`
+4. `./publicar_painel_manual.sh` (gera `docs/index.html`, commit e push).
+5. Pages serve `docs/` direto da `main` — site atualiza em ~1–3 min.
 
-Site publicado (exemplo): https://brunothiago.github.io/painelaio/
+Site publicado: https://brunothiago.github.io/painelaio/
