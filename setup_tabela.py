@@ -51,7 +51,17 @@ CREATE TABLE IF NOT EXISTS {SCHEMA}.aio_solicitacoes (
     email_assunto             VARCHAR(500),
     data_aio_recebido         TIMESTAMP WITH TIME ZONE,
     email_id                  VARCHAR(200) UNIQUE,
-    criado_em                 TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    criado_em                 TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    -- Etapas de tramitação do fluxo AIO (datas preenchidas manualmente)
+    dt_processo_sns           DATE,
+    dt_elaboracao_nt          DATE,
+    dt_envio_gabse            DATE,
+    dt_envio_dmpse            DATE,
+    dt_checklist_cgpac        DATE,
+    dt_gabse_oficio           DATE,
+    dt_assinatura_sex         DATE,
+    dt_envio_sns              DATE,
+    dt_aviso_sns_caixa        DATE
 );
 
 CREATE INDEX IF NOT EXISTS idx_aio_instrumento ON {SCHEMA}.aio_solicitacoes (instrumento);

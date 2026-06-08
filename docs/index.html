@@ -1,17 +1,442 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <link rel="icon" type="image/png" href="/painel_aio/favicon.png" />
-    <link rel="apple-touch-icon" href="/painel_aio/favicon.png" />
-    <title>Painel AIO — MCID / Novo PAC</title>
-    <script type="module" crossorigin src="/painel_aio/assets/index-B2t3S8m-.js"></script>
-    <link rel="stylesheet" crossorigin href="/painel_aio/assets/index-BswIQG5Z.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel AIO — Acompanhamento de Fluxo (PC 32/2024)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --azul:#1351B4;        /* azul gov.br primário */
+    --azul-escuro:#071D41; /* azul institucional escuro */
+    --azul-claro:#C5D4EB;
+    --verde:#168821;       /* sucesso gov.br */
+    --amarelo:#FFCD07;     /* atenção gov.br */
+    --vermelho:#E52207;    /* atrasado */
+    --cinza-track:#D9DDE3;
+    --cinza-texto:#555B6B;
+    --cinza-circulo:#B6BCC8;
+    --fundo:#F0F2F5;
+    --card:#FFFFFF;
+    --borda:#E2E6EC;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Public Sans',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:var(--fundo);
+    color:var(--azul-escuro);
+    line-height:1.45;
+    padding:28px 24px 60px;
+  }
+  .wrap{max-width:1500px;margin:0 auto}
+
+  /* ---------- Cabeçalho ---------- */
+  header.topo{
+    display:flex;align-items:flex-end;justify-content:space-between;
+    gap:24px;flex-wrap:wrap;margin-bottom:22px;
+    border-bottom:4px solid var(--azul);padding-bottom:16px;
+  }
+  .titulo h1{
+    font-family:'Raleway',sans-serif;font-weight:800;
+    font-size:1.85rem;color:var(--azul);letter-spacing:-.5px;
+  }
+  .titulo p{color:var(--cinza-texto);font-size:.92rem;margin-top:2px}
+  .selo{
+    background:var(--azul-escuro);color:#fff;border-radius:8px;
+    padding:8px 14px;font-size:.72rem;font-weight:600;letter-spacing:.5px;
+    text-transform:uppercase;white-space:nowrap;
+  }
+  .selo small{display:block;font-weight:400;opacity:.75;letter-spacing:0;text-transform:none;font-size:.68rem;margin-top:2px}
+
+  /* ---------- Cards de resumo ---------- */
+  .resumo{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:14px;margin-bottom:18px;
+  }
+  .stat{
+    background:var(--card);border:1px solid var(--borda);border-radius:12px;
+    padding:14px 18px;position:relative;overflow:hidden;
+  }
+  .stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--azul)}
+  .stat.ok::before{background:var(--verde)}
+  .stat.and::before{background:var(--amarelo)}
+  .stat.atr::before{background:var(--vermelho)}
+  .stat .n{font-family:'Raleway',sans-serif;font-weight:800;font-size:2rem;line-height:1}
+  .stat .l{font-size:.78rem;color:var(--cinza-texto);text-transform:uppercase;letter-spacing:.4px;margin-top:4px;font-weight:600}
+
+  /* ---------- Gargalo por etapa ---------- */
+  .gargalo{
+    background:var(--card);border:1px solid var(--borda);border-radius:12px;
+    padding:16px 20px;margin-bottom:22px;
+  }
+  .gargalo h3{font-family:'Raleway',sans-serif;font-size:.95rem;margin-bottom:12px;color:var(--azul-escuro)}
+  .gbars{display:flex;gap:6px;align-items:flex-end;height:90px}
+  .gbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+  .gbar .barra{width:70%;max-width:34px;background:var(--azul-claro);border-radius:4px 4px 0 0;min-height:3px;transition:height .4s;position:relative}
+  .gbar.hot .barra{background:var(--azul)}
+  .gbar .gv{font-size:.72rem;font-weight:700;color:var(--azul-escuro)}
+  .gbar .gl{font-size:.6rem;color:var(--cinza-texto);text-align:center;line-height:1.1;height:24px;overflow:hidden}
+
+  /* ---------- Controles ---------- */
+  .controles{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+  .controles input{
+    font-family:inherit;font-size:.9rem;padding:9px 14px;border:1px solid var(--borda);
+    border-radius:8px;min-width:240px;background:#fff;color:var(--azul-escuro);
+  }
+  .controles input:focus{outline:2px solid var(--azul);border-color:var(--azul)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{
+    border:1px solid var(--borda);background:#fff;border-radius:20px;padding:7px 16px;
+    font-size:.82rem;font-weight:600;cursor:pointer;color:var(--cinza-texto);transition:.15s;
+  }
+  .chip.ativo{background:var(--azul);color:#fff;border-color:var(--azul)}
+
+  /* ---------- Card do AIO ---------- */
+  .aio{
+    background:var(--card);border:1px solid var(--borda);border-radius:14px;
+    padding:20px 22px 8px;margin-bottom:16px;box-shadow:0 1px 3px rgba(7,29,65,.04);
+  }
+  .aio-cab{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+  .aio-id{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .aio-id .num{font-family:'Raleway',sans-serif;font-weight:800;font-size:1.15rem;color:var(--azul)}
+  .aio-id .obj{font-size:.85rem;color:var(--cinza-texto)}
+  .badges{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .badge{font-size:.72rem;font-weight:700;padding:4px 11px;border-radius:20px;text-transform:uppercase;letter-spacing:.3px}
+  .badge.ok{background:#E3F5E1;color:var(--verde)}
+  .badge.and{background:#FFF3D1;color:#85650b}
+  .badge.atr{background:#FCE2DE;color:var(--vermelho)}
+  .parado{font-size:.78rem;color:var(--cinza-texto)}
+  .parado b{color:var(--azul-escuro)}
+
+  /* ---------- Meta do card (programa + valor) ---------- */
+  .aio-meta{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-bottom:6px;padding-top:2px}
+  .meta-prog{font-size:.82rem;font-weight:600;color:var(--azul-escuro);display:flex;align-items:center;gap:5px}
+  .meta-prog::before{content:"▪";color:var(--azul);font-size:.7rem}
+  .meta-val{font-size:.82rem;font-weight:700;color:var(--verde)}
+
+  /* ---------- Dropdown de programa ---------- */
+  .prog-drop{position:relative}
+  .prog-btn{
+    display:flex;align-items:center;gap:8px;
+    padding:9px 14px;border:1px solid var(--borda);border-radius:8px;
+    background:#fff;cursor:pointer;font-size:.9rem;font-family:inherit;
+    color:var(--azul-escuro);white-space:nowrap;transition:.15s;
+  }
+  .prog-btn:hover{border-color:var(--azul)}
+  .prog-btn.ativo{border-color:var(--azul);outline:2px solid var(--azul)}
+  .prog-btn .seta{font-size:.65rem;margin-left:4px;transition:transform .2s;display:inline-block}
+  .prog-btn.aberto .seta{transform:rotate(180deg)}
+  .prog-rotulo{font-weight:600}
+  .prog-menu{
+    display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:200;
+    background:#fff;border:1px solid var(--borda);border-radius:10px;
+    box-shadow:0 6px 24px rgba(7,29,65,.13);
+    width:min(420px,90vw);max-height:300px;overflow-y:auto;
+  }
+  .prog-menu.visivel{display:block}
+  .prog-item{
+    display:grid;grid-template-columns:16px 1fr;gap:10px;align-items:center;
+    padding:8px 14px;font-size:.85rem;cursor:pointer;
+    border-bottom:1px solid var(--borda);color:var(--cinza-texto);
+    user-select:none;transition:.1s;
+  }
+  .prog-item:last-child{border-bottom:none}
+  .prog-item:hover{background:var(--fundo)}
+  .prog-item input[type=checkbox]{
+    accent-color:var(--azul);width:15px;height:15px;cursor:pointer;
+  }
+  .prog-item span{
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .prog-item.desmarcado{color:var(--cinza-circulo)}
+
+  /* ---------- Timeline (stepper) ---------- */
+  .scroll{overflow-x:auto;padding:30px 4px 6px;-webkit-overflow-scrolling:touch}
+  .stepper{position:relative;display:flex;min-width:1180px}
+  .track{position:absolute;left:0;right:0;top:50px;height:14px;background:var(--cinza-track);border-radius:10px}
+  .fill{position:absolute;left:0;top:50px;height:14px;background:var(--azul);border-radius:10px;transition:width .5s ease}
+  .step{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;z-index:2;min-width:0}
+  .step .dias{font-size:.7rem;color:var(--cinza-texto);height:16px;font-weight:600}
+  .step .data{font-size:.74rem;font-weight:700;color:var(--azul-escuro);height:18px;margin-bottom:6px;white-space:nowrap}
+  .step .data.vazia{color:transparent}
+  .circ{
+    width:30px;height:30px;border-radius:50%;background:var(--cinza-circulo);
+    display:flex;align-items:center;justify-content:center;color:#fff;
+    border:3px solid var(--card);box-shadow:0 0 0 1px var(--cinza-circulo);
+    font-size:.8rem;transition:.2s;
+  }
+  .step.done .circ{background:var(--azul);box-shadow:0 0 0 1px var(--azul)}
+  .step.atual .circ{background:#fff;border-color:var(--azul);box-shadow:0 0 0 3px var(--azul);color:var(--azul);animation:pulso 1.6s infinite}
+  .step.atual.atrasado .circ{border-color:var(--vermelho);box-shadow:0 0 0 3px var(--vermelho);color:var(--vermelho)}
+  @keyframes pulso{0%,100%{box-shadow:0 0 0 3px var(--azul)}50%{box-shadow:0 0 0 6px rgba(19,81,180,.25)}}
+  .step .nome{font-size:.7rem;text-align:center;color:var(--cinza-texto);margin-top:8px;line-height:1.15;padding:0 4px}
+  .step.done .nome,.step.atual .nome{color:var(--azul-escuro);font-weight:600}
+  .step .marco{font-size:.62rem;color:var(--cinza-circulo);margin-top:2px;font-weight:700}
+
+  .vazio{text-align:center;color:var(--cinza-texto);padding:50px;font-size:.95rem}
+  footer{margin-top:30px;font-size:.78rem;color:var(--cinza-texto);text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="topo">
+    <div class="titulo">
+      <h1>Painel de Acompanhamento — AIO</h1>
+      <p>Fluxo de tramitação · Portaria Conjunta nº 32/2024 · CGPAC / MCid</p>
+    </div>
+    <div class="selo">Novo PAC · Monitoramento<small id="gerado">gerado em —</small></div>
+  </header>
+
+  <div class="resumo" id="resumo"></div>
+
+  <div class="gargalo">
+    <h3>Onde estão parados os AIOs (etapa atual de cada processo em andamento)</h3>
+    <div class="gbars" id="gbars"></div>
+  </div>
+
+  <div class="controles">
+    <input id="busca" type="search" placeholder="Buscar por nº do AIO, ente ou objeto…">
+    <div class="chips" id="chips">
+      <span class="chip ativo" data-f="todos">Todos</span>
+      <span class="chip" data-f="andamento">Em andamento</span>
+      <span class="chip" data-f="atrasado">Atrasados</span>
+      <span class="chip" data-f="concluido">Concluídos</span>
+    </div>
+    <div class="prog-drop" id="prog-drop">
+      <button class="prog-btn" id="prog-btn" type="button">
+        <span class="prog-rotulo" id="prog-rotulo">Todos os programas</span>
+        <span class="seta">▼</span>
+      </button>
+      <div class="prog-menu" id="prog-menu"></div>
+    </div>
+  </div>
+
+  <div id="lista"></div>
+
+  <footer>Etapas pendentes assumem situação a partir da última data preenchida. “Atrasado” = parado há mais de 15 dias na etapa atual. Dados extraídos de <code>se_cgpac.aio_solicitacoes</code>.</footer>
+</div>
+
+<script>
+/* ====================================================================
+   1) ETAPAS DO FLUXO (ordem oficial) — não alterar a ordem sem ajustar
+      o mapeamento de colunas em gerar_painel.py
+   ==================================================================== */
+const ETAPAS = [
+  "Chegada e-mail Caixa",
+  "Processo na SNs",
+  "Elaboração da NT",
+  "Envio para GAB-SE",
+  "Envio para DMP-SE",
+  "Check-list CGPAC",
+  "GAB-SE → Ofício",
+  "Assinatura SEx",
+  "Envio SNs",
+  "Aviso SNs → Caixa"
+];
+
+/* ====================================================================
+   2) DADOS — INJETADOS automaticamente por gerar_painel.py.
+      Não editar à mão. O placeholder abaixo é substituído na geração.
+   ==================================================================== */
+const DADOS = [{"num": "Instrumento 974524 / TC 1100343", "obj": "Construção de unidades habitacionais para população do Município de Santa Maria das Barreiras-PA. (SANTA MARIA DAS BARREIRAS/PA)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 3331250.0, "datas": ["2026-05-25", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 970254 / TC 1098940", "obj": "Construção de Unidades Habitacionais no município de Pau D'arco PA. (PAU D'ARCO/PA)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 3250000.0, "datas": ["2026-05-25", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 989869 / TC 1103739", "obj": "Provisão de unidades habitacionais no município de Carvalhos pelo Programa Minha Casa, Minha Vida (CARVALHOS/MG)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 2870000.0, "datas": ["2026-05-25", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 992235 / TC 1106144", "obj": "Provisão habitacional no município de Pontalina -GO. (PONTALINA/GO)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 2859912.06, "datas": ["2026-05-25", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 974096 / TC 1100285", "obj": "CONSTRUÇÃO DE UNIDADES HABITACIONAIS NO MUNICÍPIO DE BELA VISTA DE MINAS/MG (BELA VISTA DE MINAS/MG)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 4037026.07, "datas": ["2026-05-25", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 990451 / TC 1106141", "obj": "Provisão Habitacional no Município de Nova América - GO (NOVA AMÉRICA/GO)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 2859092.38, "datas": ["2026-05-25", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 974777 / TC 1100002", "obj": "Produção de unidades habitacionais no município de Carnaubal/CE (CARNAUBAL/CE)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 3363328.58, "datas": ["2026-05-25", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 983430 / TC 1104091", "obj": "Provisão habitacional no Município de Ipiranga/PR (IPIRANGA/PR)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 2800000.0, "datas": ["2026-05-25", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 987341 / TC 1106560", "obj": "Provisão de unidades habitacionais no município de Pederneiras/SP. (PEDERNEIRAS/SP)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 6064855.33, "datas": ["2026-05-25", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 970783 / TC 1099209", "obj": "Construção de Unidades Habitacionais no Municipio de Santo Antônio do Jacinto, para atendimento ao programa MCMV FNHIS S (SANTO ANTÔNIO DO JACINTO/MG)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 3470499.53, "datas": ["2026-05-25", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 983506 / TC 1104351", "obj": "Provisão de unidades habitacionais em loteamento urbano do município de Rio dos Índios (RIO DOS ÍNDIOS/RS)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 2937120.65, "datas": ["2026-05-25", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 974837 / TC 1100180", "obj": "Construção de Unidades Habitacionais no município de Pedro Canário-ES (PEDRO CANÁRIO/ES)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 3720456.21, "datas": ["2026-05-25", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 991884 / TC 1103161", "obj": "Provisão de unidades habitacionais no município de São Francisco do Pará, em conformidade com as diretrizes do Programa  (SÃO FRANCISCO DO PARÁ/PA)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 3080000.0, "datas": ["2026-05-25", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 987619 / TC 1103431", "obj": "PROVISÃO HABITACIONAL NO MUNICÍPIO DE SATUBINHA - MA. (SATUBINHA/MA)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 2800000.0, "datas": ["2026-05-25", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 974734 / TC 1100548", "obj": "Construção de unidades habitacionais em áreas urbanas - MCMV – FNHIS sub 50, no Município de Ruy Barbosa-RN (RUY BARBOSA/RN)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 3331250.56, "datas": ["2026-05-25", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 986939 / TC 1105091", "obj": "Provisão habitacional no Município de Caculé/BA. (CACULÉ/BA)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 2800000.0, "datas": ["2026-05-22", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 987333 / TC 1106419", "obj": "Provisão de unidades habitacionais através do Programa Minha Casa, Minha Vida Sub 50 com recursos do Fundo Nacional de H (NOVA INDEPENDÊNCIA/SP)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 2800000.0, "datas": ["2026-05-22", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 992388 / TC 1103140", "obj": "Provisão de unidades habitacionais no Município de Breu Branco/PA (BREU BRANCO/PA)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 6160000.0, "datas": ["2026-05-22", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 989882 / TC 1103812", "obj": "Provisão habitacional no município de Serra da Saudade/MG (SERRA DA SAUDADE/MG)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 3029436.9, "datas": ["2026-05-22", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 992596 / TC 1103843", "obj": "Provisão habitacional no município de Guarda-Mor/MG (GUARDA-MOR/MG)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 3112079.02, "datas": ["2026-05-22", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 969603 / TC 1098544", "obj": "Elaboração de estudos - VLT Bauru (BAURU/SP)", "programa": "Novo PAC - Mobilidade Urbana Sustentável: Mobilidade Grandes e Médias Cidades", "valor": 2300000.0, "datas": ["2026-05-22", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 987274 / TC 1106572", "obj": "CONSTRUÇÃO DE UNIDADES HABITACIONAIS. (CÂNDIDO MOTA/SP)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 3135300.96, "datas": ["2026-05-22", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 974296 / TC 1100271", "obj": "Construção de moradias populares (VÁRZEA DA PALMA/MG)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 6500000.0, "datas": ["2026-05-22", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 986965 / TC 1102932", "obj": "PROVISÃO HABITACIONAL NO MUNICÍPIO DE ACOPIARA/CE (ACOPIARA/CE)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 5880952.22, "datas": ["2026-05-22", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 974305 / TC 1099961", "obj": "Construção de Unidades Habitacionais (SANTA CECÍLIA/SC)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 2730000.0, "datas": ["2026-05-22", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 974040 / TC 1100201", "obj": "PROVISÃO DE UNIDADES HABITACIONAIS NO MUNICÍPIO DE ALTO PARNAÍBA/MA (ALTO PARNAÍBA/MA)", "programa": "Minha Casa, Minha Vida - MCMV FNHIS Sub 50", "valor": 3250000.0, "datas": ["2026-05-22", null, null, null, null, null, null, null, null, null]}, {"num": "Instrumento 969600 / TC 1098521", "obj": "Obras de Implantação / Requalificação de Corredores exclusivos de ônibus: Norte-Sul e Leste-Oeste na região Metropolitan (RECIFE/PE)", "programa": "Novo PAC - Mobilidade Urbana Sustentável: Mobilidade Grandes e Médias Cidades", "valor": 258770561.53, "datas": ["2026-05-22", null, null, null, null, null, null, null, null, null]}];
+
+const GERADO_EM = "04/06/2026 15:37";
+
+/* ====================================================================
+   3) CÁLCULOS E HELPERS
+   ==================================================================== */
+const HOJE = new Date();
+const fmt = s => { const [a,m,d]=s.split("-"); return `${d}/${m}/${a}`; };
+const diasEntre = (a,b)=> Math.round((new Date(b)-new Date(a))/86400000);
+const fmtValor = v => v == null ? '—' :
+  'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function analisa(aio){
+  const feitas = aio.datas.filter(Boolean).length;
+  const ultimoIdx = feitas-1;
+  const atualIdx = feitas < 10 ? feitas : 9;
+  const concluido = feitas === 10;
+  const ultimaData = ultimoIdx>=0 ? aio.datas[ultimoIdx] : null;
+  const diasParado = (!concluido && ultimaData) ? diasEntre(ultimaData, HOJE.toISOString().slice(0,10)) : 0;
+  const atrasado = !concluido && diasParado > 15;
+  return {feitas, ultimoIdx, atualIdx, concluido, diasParado, atrasado};
+}
+
+/* ====================================================================
+   4) RENDER
+   ==================================================================== */
+let filtro = "todos", termo = "", excluidos = new Set();
+
+function render(){
+  const dados = DADOS.map(a=>({...a, info:analisa(a)}));
+
+  const tot=dados.length;
+  const ok=dados.filter(d=>d.info.concluido).length;
+  const atr=dados.filter(d=>d.info.atrasado).length;
+  const and=tot-ok;
+  document.getElementById("resumo").innerHTML = `
+    <div class="stat"><div class="n">${tot}</div><div class="l">AIOs no painel</div></div>
+    <div class="stat and"><div class="n">${and}</div><div class="l">Em andamento</div></div>
+    <div class="stat atr"><div class="n">${atr}</div><div class="l">Atrasados (+15d)</div></div>
+    <div class="stat ok"><div class="n">${ok}</div><div class="l">Concluídos</div></div>`;
+
+  const cont = ETAPAS.map(()=>0);
+  dados.filter(d=>!d.info.concluido).forEach(d=> cont[d.info.atualIdx]++);
+  const maxc = Math.max(1,...cont);
+  document.getElementById("gbars").innerHTML = ETAPAS.map((e,i)=>`
+    <div class="gbar ${cont[i]===maxc&&cont[i]>0?'hot':''}">
+      <div class="gv">${cont[i]||''}</div>
+      <div class="barra" style="height:${cont[i]/maxc*60}px"></div>
+      <div class="gl">${e}</div>
+    </div>`).join("");
+
+  const lista = dados.filter(d=>{
+    if(filtro==="andamento" && d.info.concluido) return false;
+    if(filtro==="atrasado" && !d.info.atrasado) return false;
+    if(filtro==="concluido" && !d.info.concluido) return false;
+    if(excluidos.size > 0 && excluidos.has(d.programa||'')) return false;
+    if(termo){
+      const t=(d.num+" "+d.obj+" "+(d.programa||"")).toLowerCase();
+      if(!t.includes(termo)) return false;
+    }
+    return true;
+  });
+
+  const cont2 = document.getElementById("lista");
+  if(!lista.length){ cont2.innerHTML = `<div class="vazio">Nenhum AIO encontrado para o filtro atual.</div>`; return; }
+
+  cont2.innerHTML = lista.map(d=>{
+    const {feitas,ultimoIdx,atualIdx,concluido,diasParado,atrasado}=d.info;
+    const fill = ultimoIdx<=0 ? 0 : (ultimoIdx/(ETAPAS.length-1))*100;
+
+    const badge = concluido
+      ? `<span class="badge ok">Concluído</span>`
+      : atrasado
+        ? `<span class="badge atr">Atrasado</span>`
+        : `<span class="badge and">Em andamento</span>`;
+
+    const parado = concluido ? "" :
+      `<span class="parado">Na etapa <b>${ETAPAS[atualIdx]}</b> há <b>${diasParado} dia${diasParado!==1?'s':''}</b></span>`;
+
+    const steps = ETAPAS.map((nome,i)=>{
+      const feita = !!d.datas[i];
+      const ehAtual = !concluido && i===atualIdx;
+      let cls = feita ? "done" : (ehAtual ? "atual" : "");
+      if(ehAtual && atrasado) cls += " atrasado";
+      const dias = (feita && i>0 && d.datas[i-1]) ? `${diasEntre(d.datas[i-1],d.datas[i])} dias` : "";
+      const data = feita ? fmt(d.datas[i]) : "";
+      const icone = feita ? "✓" : (ehAtual ? "•" : "");
+      const marco = i===0?"Início":(i===ETAPAS.length-1?"Fim":`Etapa ${i+1}`);
+      return `<div class="step ${cls}">
+        <div class="dias">${dias}</div>
+        <div class="data ${data?'':'vazia'}">${data||'—'}</div>
+        <div class="circ">${icone}</div>
+        <div class="nome">${nome}</div>
+        <div class="marco">${marco}</div>
+      </div>`;
+    }).join("");
+
+    return `<div class="aio">
+      <div class="aio-cab">
+        <div class="aio-id"><span class="num">${d.num}</span><span class="obj">${d.obj}</span></div>
+        <div class="badges">${parado}${badge}<span class="parado">${feitas}/10 etapas</span></div>
+      </div>
+      <div class="aio-meta">
+        <span class="meta-prog">${d.programa||'Programa não informado'}</span>
+        <span class="meta-val">${fmtValor(d.valor)}</span>
+      </div>
+      <div class="scroll"><div class="stepper">
+        <div class="track"></div><div class="fill" style="width:${fill}%"></div>
+        ${steps}
+      </div></div>
+    </div>`;
+  }).join("");
+}
+
+/* ====================================================================
+   5) DROPDOWN DE PROGRAMA
+   ==================================================================== */
+function initProgDrop(){
+  const programas = [...new Set(DADOS.map(d=>d.programa||"").filter(Boolean))].sort();
+  const total = programas.length;
+  const btn   = document.getElementById("prog-btn");
+  const menu  = document.getElementById("prog-menu");
+  const rotulo= document.getElementById("prog-rotulo");
+
+  function atualizaRotulo(){
+    const visiveis = total - excluidos.size;
+    rotulo.textContent = excluidos.size === 0
+      ? "Todos os programas"
+      : `${visiveis} de ${total} programa${total!==1?'s':''}`;
+    btn.classList.toggle("ativo", excluidos.size > 0);
+  }
+
+  function toggleMenu(abrir){
+    const estaAberto = menu.classList.contains("visivel");
+    const novoEstado = abrir !== undefined ? abrir : !estaAberto;
+    menu.classList.toggle("visivel", novoEstado);
+    btn.classList.toggle("aberto", novoEstado);
+  }
+
+  btn.addEventListener("click", e=>{ e.stopPropagation(); toggleMenu(); });
+
+  document.addEventListener("click", e=>{
+    if(!document.getElementById("prog-drop").contains(e.target)) toggleMenu(false);
+  });
+
+  programas.forEach(prog=>{
+    const item = document.createElement("div");
+    item.className = "prog-item";
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = true;
+
+    const label = document.createElement("span");
+    label.textContent = prog;
+    label.title = prog;
+
+    item.appendChild(cb);
+    item.appendChild(label);
+
+    item.addEventListener("click", e=>{
+      if(e.target !== cb) cb.checked = !cb.checked;
+      if(cb.checked){
+        excluidos.delete(prog);
+        item.classList.remove("desmarcado");
+      } else {
+        excluidos.add(prog);
+        item.classList.add("desmarcado");
+      }
+      atualizaRotulo();
+      render();
+    });
+
+    menu.appendChild(item);
+  });
+
+  atualizaRotulo();
+}
+
+/* ====================================================================
+   6) EVENTOS
+   ==================================================================== */
+document.getElementById("chips").addEventListener("click",e=>{
+  if(!e.target.classList.contains("chip"))return;
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("ativo"));
+  e.target.classList.add("ativo");
+  filtro=e.target.dataset.f; render();
+});
+document.getElementById("busca").addEventListener("input",e=>{
+  termo=e.target.value.trim().toLowerCase(); render();
+});
+
+if(GERADO_EM && !GERADO_EM.includes("__")) document.getElementById("gerado").textContent = "gerado em "+GERADO_EM;
+initProgDrop();
+render();
+</script>
+</body>
 </html>

@@ -13,10 +13,17 @@ echo "=== 2/3 CSV em dashboard/public/aio_solicitacoes.csv ==="
 ls -la dashboard/public/aio_solicitacoes.csv
 
 echo ""
-echo "=== 3/3 Build do dashboard ==="
+echo "=== 3/4 Build do dashboard ==="
 cd dashboard
 npm install
 npm run build
+cd ..
+
 echo ""
-echo "Pronto. Para publicar: git add dashboard/public/aio_solicitacoes.csv && git push"
-echo "Site local: cd dashboard && npm run preview"
+echo "=== 4/4 Painel HTML de acompanhamento ==="
+python3 painel/gerar_painel.py
+echo ""
+echo "Pronto."
+echo "  Dashboard: cd dashboard && npm run preview"
+echo "  Painel AIO: open painel/painel_aio.html"
+echo "  Publicar: git add dashboard/public/aio_solicitacoes.csv && git push"

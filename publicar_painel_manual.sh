@@ -1,46 +1,35 @@
 #!/bin/bash
-# Publica o painel: build → pasta docs/ → push (GitHub Pages lê docs/ na main).
+# Publica o Painel AIO (linha do tempo, PC 32/2024) no GitHub Pages.
+# O painel é um HTML estático autossuficiente gerado a partir do banco.
+# GitHub Pages serve docs/ na branch main (sem GitHub Actions).
 set -e
 cd "$(dirname "$0")"
 
-echo "=== 1/4 Exportar CSV (se config.env existir) ==="
+echo "=== 1/3 Gerar painel a partir do banco ==="
 if [ -f config.env ]; then
   source .venv/bin/activate 2>/dev/null || true
-  python3 exportar_csv.py || echo "(export ignorado — sem banco)"
+  python3 painel/gerar_painel.py --saida docs/index.html
 else
-  echo "(sem config.env — usa CSV já existente)"
+  echo "(sem config.env — copiando painel já gerado)"
+  cp painel/painel_aio.html docs/index.html
 fi
-
-echo ""
-echo "=== 2/4 Build do dashboard ==="
-cd dashboard
-npm install
-npm run build
-cd ..
-
-echo ""
-echo "=== 3/4 Copiar build para docs/ ==="
-rm -rf docs
-cp -r dashboard/dist docs
 touch docs/.nojekyll
-LINHAS=$(($(wc -l < docs/aio_solicitacoes.csv) - 1))
-echo "Registros no CSV publicado: $LINHAS"
 
 echo ""
-echo "=== 4/4 Commit e push (ative Pages: branch main, pasta /docs) ==="
-git add docs/
+echo "=== 2/3 Commit ==="
+git add docs/index.html docs/.nojekyll
 git status -sb docs/
 
 if git diff --cached --quiet; then
   echo "Nada novo em docs/ para commitar."
 else
-  git commit -m "Publica painel em docs/ (${LINHAS} AIOs)"
+  git commit -m "Publica Painel AIO (linha do tempo) em docs/"
 fi
 
+echo ""
+echo "=== 3/3 Push ==="
 git push origin main
-
 gh api -X POST repos/brunothiago/painel_aio/pages/builds 2>/dev/null || true
 
 echo ""
-echo "Pronto. Em 2–5 min: https://brunothiago.github.io/painel_aio/"
-echo "O painel também busca o CSV atualizado direto do GitHub se o site estiver em cache."
+echo "Pronto. Em 2-5 min: https://brunothiago.github.io/painel_aio/"
