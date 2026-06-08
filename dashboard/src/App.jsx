@@ -14,7 +14,7 @@ import { dadosExemplo, linhasBrutasExemplo } from './dados-exemplo';
 
 const CSV_BASE = `${import.meta.env.BASE_URL}aio_solicitacoes.csv`;
 const CSV_GITHUB_RAW =
-  'https://raw.githubusercontent.com/brunothiago/painel_aio/main/dashboard/public/aio_solicitacoes.csv';
+  'https://raw.githubusercontent.com/brunothiago/painelaio/main/dashboard/public/aio_solicitacoes.csv';
 
 function parseCsvText(text) {
   return new Promise((resolve, reject) => {

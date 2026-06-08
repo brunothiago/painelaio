@@ -40,7 +40,7 @@ cd dashboard && npm install && npm run build
 
 3. Settings → Pages → Source: **GitHub Actions** (workflow incluído) ou pasta `docs` com conteúdo de `dist`.
 
-URL esperada: `https://SEU_USUARIO.github.io/painel_aio/`
+URL esperada: `https://SEU_USUARIO.github.io/painelaio/`
 
 ## Arquivos
 

@@ -31,7 +31,7 @@ git status   # não deve listar config.env
 
 O CSV em `dashboard/public/aio_solicitacoes.csv` contém **dados operacionais de
 AIO** (município, TC, valores, assunto do email, etc.). Só faça commit/push se
-aceitar que isso fique **público** em `https://SEU_USUARIO.github.io/painel_aio/`.
+aceitar que isso fique **público** em `https://SEU_USUARIO.github.io/painelaio/`.
 
 Se `config.env` ou tokens forem commitados por engano: remova do Git, **rotacione**
 senha do banco e gere novo token Gmail (`gerar_token.py`).
@@ -72,6 +72,6 @@ cd dashboard && npm install && npm run dev
 2. Rode localmente: `./rodar_fluxo_completo.sh 7` (VPN se necessário para o banco).
 3. `git status` — confirme que `config.env` **não** está na lista.
 4. Commit incluindo `dashboard/public/aio_solicitacoes.csv` (dados **públicos** no Pages).
-5. Push → GitHub Actions publica em `https://SEU_USUARIO.github.io/painel_aio/`
+5. Push → GitHub Actions publica em `https://SEU_USUARIO.github.io/painelaio/`
 
-Site publicado (exemplo): https://brunothiago.github.io/painel_aio/
+Site publicado (exemplo): https://brunothiago.github.io/painelaio/

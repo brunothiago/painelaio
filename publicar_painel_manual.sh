@@ -29,7 +29,7 @@ fi
 echo ""
 echo "=== 3/3 Push ==="
 git push origin main
-gh api -X POST repos/brunothiago/painel_aio/pages/builds 2>/dev/null || true
+gh api -X POST repos/brunothiago/painelaio/pages/builds 2>/dev/null || true
 
 echo ""
-echo "Pronto. Em 2-5 min: https://brunothiago.github.io/painel_aio/"
+echo "Pronto. Em 2-5 min: https://brunothiago.github.io/painelaio/"

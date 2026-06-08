@@ -221,7 +221,7 @@ Abra o endereço que o terminal mostrar (geralmente http://localhost:5173).
 4. O commit pode incluir `dashboard/public/aio_solicitacoes.csv` (dados AIO
    **públicos no painel** — revise se está confortável com o conteúdo).
 5. Push → GitHub Actions publica o site. URL típica:
-   `https://SEU_USUARIO.github.io/painel_aio/`
+   `https://SEU_USUARIO.github.io/painelaio/`
 
 Detalhes técnicos: [dashboard/README.md](dashboard/README.md) e [README.md](README.md)
 (seção Segurança).
