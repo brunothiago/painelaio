@@ -11,6 +11,7 @@ Uso:
 
 import argparse
 import datetime
+import decimal
 import json
 import pathlib
 import sys
@@ -25,6 +26,8 @@ SAIDA_PADRAO = AQUI / "painel_aio.html"
 
 PH_DADOS  = "/*__DADOS_AIO__*/[]"
 PH_GERADO = "/*__GERADO_EM__*/"
+PH_BANCO_COLS = "/*__BANCO_COLS__*/[]"
+PH_BANCO_ROWS = "/*__BANCO_ROWS__*/[]"
 
 # Mapeamento das 10 etapas → colunas de data (ordem exata igual ao template)
 # Etapa 1 já existia na tabela; as outras foram adicionadas por migrar_colunas_etapas.py
@@ -49,6 +52,32 @@ def _iso(v):
     if isinstance(v, (datetime.date, datetime.datetime)):
         return v.strftime("%Y-%m-%d")
     return str(v)[:10]
+
+
+def _banco_safe(v):
+    """Converte valores do banco para tipos serializáveis em JSON (export completo)."""
+    if v is None:
+        return None
+    if isinstance(v, datetime.datetime):
+        return v.strftime("%Y-%m-%d %H:%M")
+    if isinstance(v, datetime.date):
+        return v.strftime("%Y-%m-%d")
+    if isinstance(v, decimal.Decimal):
+        return float(v)
+    return v
+
+
+def buscar_banco(conn):
+    """Lê a tabela inteira (todas as colunas) para a tabela exportável do painel."""
+    sql = (
+        "SELECT * FROM se_cgpac.aio_solicitacoes"
+        " ORDER BY data_aio_recebido DESC NULLS LAST, id DESC"
+    )
+    with conn.cursor() as cur:
+        cur.execute(sql)
+        cols = [c[0] for c in cur.description]
+        rows = [[_banco_safe(v) for v in row] for row in cur.fetchall()]
+    return cols, rows
 
 
 def buscar_aios(conn):
@@ -96,17 +125,21 @@ def main():
     conn = get_db_connection()
     try:
         dados = list(buscar_aios(conn))
+        banco_cols, banco_rows = buscar_banco(conn)
     finally:
         conn.close()
 
     html = TEMPLATE.read_text(encoding="utf-8")
     html = html.replace(PH_DADOS, json.dumps(dados, ensure_ascii=False))
+    html = html.replace(PH_BANCO_COLS, json.dumps(banco_cols, ensure_ascii=False))
+    html = html.replace(PH_BANCO_ROWS, json.dumps(banco_rows, ensure_ascii=False))
     html = html.replace(PH_GERADO, datetime.datetime.now().strftime("%d/%m/%Y %H:%M"))
 
     saida = pathlib.Path(args.saida)
     saida.parent.mkdir(parents=True, exist_ok=True)
     saida.write_text(html, encoding="utf-8")
-    print(f"OK: {len(dados)} AIO(s) → {saida}")
+    print(f"OK: {len(dados)} AIO(s) | banco completo: {len(banco_rows)} linha(s) × "
+          f"{len(banco_cols)} coluna(s) → {saida}")
 
 
 if __name__ == "__main__":

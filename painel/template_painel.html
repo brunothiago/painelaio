@@ -176,6 +176,45 @@
   .step .marco{font-size:.62rem;color:var(--cinza-circulo);margin-top:2px;font-weight:700}
 
   .vazio{text-align:center;color:var(--cinza-texto);padding:50px;font-size:.95rem}
+
+  /* ---------- Banco de dados completo (tabela exportável) ---------- */
+  .banco{
+    background:var(--card);border:1px solid var(--borda);border-radius:14px;
+    padding:18px 22px 20px;margin-top:28px;box-shadow:0 1px 3px rgba(7,29,65,.04);
+  }
+  .banco-cab{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+  .banco-cab h3{font-family:'Raleway',sans-serif;font-weight:800;font-size:1.15rem;color:var(--azul)}
+  .banco-cab p{font-size:.82rem;color:var(--cinza-texto);margin-top:3px}
+  .banco-acoes{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .banco-busca{
+    font-family:inherit;font-size:.88rem;padding:9px 14px;border:1px solid var(--borda);
+    border-radius:8px;min-width:220px;background:#fff;color:var(--azul-escuro);
+  }
+  .banco-busca:focus{outline:2px solid var(--azul);border-color:var(--azul)}
+  .btn-export{
+    display:inline-flex;align-items:center;gap:7px;background:var(--azul);color:#fff;
+    border:none;border-radius:8px;padding:10px 16px;font-family:inherit;font-size:.85rem;
+    font-weight:700;cursor:pointer;transition:.15s;white-space:nowrap;
+  }
+  .btn-export:hover{background:#0c3d8a}
+  .btn-export.sec{background:#fff;color:var(--azul);border:1px solid var(--azul)}
+  .btn-export.sec:hover{background:var(--fundo)}
+  .banco-scroll{overflow:auto;max-height:600px;border:1px solid var(--borda);border-radius:10px}
+  table.banco-tab{border-collapse:collapse;width:100%;font-size:.8rem;white-space:nowrap}
+  table.banco-tab th,table.banco-tab td{padding:9px 13px;border-bottom:1px solid var(--borda);text-align:left}
+  table.banco-tab thead th{
+    position:sticky;top:0;z-index:3;background:var(--azul-escuro);color:#fff;
+    font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.3px;
+    cursor:pointer;user-select:none;
+  }
+  table.banco-tab thead th:hover{background:#0c2a55}
+  table.banco-tab thead th .seta{opacity:.85;font-size:.7rem;margin-left:3px}
+  table.banco-tab tbody tr:nth-child(even){background:#F7F9FC}
+  table.banco-tab tbody tr:hover{background:#EEF3FB}
+  table.banco-tab td{color:var(--cinza-texto);max-width:340px;overflow:hidden;text-overflow:ellipsis}
+  table.banco-tab td.num{text-align:right;font-variant-numeric:tabular-nums}
+  table.banco-tab td.vazio-cel{color:var(--cinza-circulo)}
+  .banco-rodape{font-size:.76rem;color:var(--cinza-texto);margin-top:11px}
   footer{margin-top:30px;font-size:.78rem;color:var(--cinza-texto);text-align:center}
 </style>
 </head>
@@ -216,6 +255,22 @@
 
   <div id="lista"></div>
 
+  <section class="banco">
+    <div class="banco-cab">
+      <div>
+        <h3>Banco de dados completo</h3>
+        <p id="banco-info">— registros · — colunas</p>
+      </div>
+      <div class="banco-acoes">
+        <input id="banco-busca" class="banco-busca" type="search" placeholder="Filtrar em todas as colunas…">
+        <button class="btn-export" id="btn-csv" type="button">⬇&nbsp; Exportar CSV</button>
+        <button class="btn-export sec" id="btn-xlsx" type="button">⬇&nbsp; Exportar Excel</button>
+      </div>
+    </div>
+    <div class="banco-scroll"><table class="banco-tab" id="banco-tab"></table></div>
+    <p class="banco-rodape">A exportação inclui <b>todas as colunas e todos os registros</b> da tabela <code>se_cgpac.aio_solicitacoes</code>, independente do filtro acima. CSV separado por ponto e vírgula, codificação UTF-8 (compatível com Excel pt-BR).</p>
+  </section>
+
   <footer>Etapas pendentes assumem situação a partir da última data preenchida. “Atrasado” = parado há mais de 15 dias na etapa atual. Dados extraídos de <code>se_cgpac.aio_solicitacoes</code>.</footer>
 </div>
 
@@ -242,6 +297,10 @@ const ETAPAS = [
       Não editar à mão. O placeholder abaixo é substituído na geração.
    ==================================================================== */
 const DADOS = /*__DADOS_AIO__*/[];
+
+/* Banco completo (todas as colunas/linhas) — usado na tabela exportável do rodapé. */
+const BANCO_COLS = /*__BANCO_COLS__*/[];
+const BANCO_ROWS = /*__BANCO_ROWS__*/[];
 
 const GERADO_EM = "/*__GERADO_EM__*/";
 
@@ -422,7 +481,199 @@ function initProgDrop(){
 }
 
 /* ====================================================================
-   6) EVENTOS
+   6) BANCO DE DADOS COMPLETO (tabela + exportação CSV/JSON)
+   ==================================================================== */
+const ROTULOS_BANCO = {
+  id:"ID", instrumento:"Instrumento", tc:"TC", recebedor:"Recebedor",
+  municipio_beneficiado:"Município beneficiado", municipio:"Município", uf:"UF",
+  data_assinatura:"Data assinatura", data_retirada_suspensiva:"Retirada suspensiva",
+  data_vigencia:"Vigência", valor_investimento:"Valor investimento",
+  valor_repasse:"Valor repasse", objeto:"Objeto", programa_codigo:"Programa (cód.)",
+  programa_descricao:"Programa (descrição)", programa:"Programa", acao_orcamentaria:"Ação orçamentária",
+  email_remetente:"E-mail remetente", email_assunto:"E-mail assunto",
+  data_aio_recebido:"AIO recebido", email_id:"E-mail ID", criado_em:"Criado em",
+  dt_processo_sns:"Processo na SNs", dt_elaboracao_nt:"Elaboração da NT",
+  dt_envio_gabse:"Envio GAB-SE", dt_envio_dmpse:"Envio DMP-SE",
+  dt_checklist_cgpac:"Check-list CGPAC", dt_gabse_oficio:"GAB-SE → Ofício",
+  dt_assinatura_sex:"Assinatura SEx", dt_envio_sns:"Envio SNs", dt_aviso_sns_caixa:"Aviso SNs → Caixa"
+};
+const rotuloCol = c => ROTULOS_BANCO[c] || c.replace(/_/g,' ').replace(/\b\w/g, m=>m.toUpperCase());
+const ehNumero = v => v!==null && v!=="" && typeof v==="number";
+const escHtml = s => String(s).replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+
+let bancoTermo = "", bancoSort = {col:null, dir:1};
+
+function linhasFiltradas(){
+  let rows = BANCO_ROWS;
+  if(bancoTermo){
+    rows = rows.filter(r => r.some(v => v!=null && String(v).toLowerCase().includes(bancoTermo)));
+  }
+  if(bancoSort.col!=null){
+    const ci=bancoSort.col, dir=bancoSort.dir;
+    rows = [...rows].sort((a,b)=>{
+      let x=a[ci], y=b[ci];
+      if(x==null && y==null) return 0;
+      if(x==null) return 1;
+      if(y==null) return -1;
+      if(typeof x==="number" && typeof y==="number") return (x-y)*dir;
+      return String(x).localeCompare(String(y),'pt-BR',{numeric:true})*dir;
+    });
+  }
+  return rows;
+}
+
+function renderBanco(){
+  const tab = document.getElementById("banco-tab");
+  if(!BANCO_COLS.length){ tab.innerHTML=""; return; }
+  const rows = linhasFiltradas();
+
+  const thead = "<thead><tr>" + BANCO_COLS.map((c,i)=>{
+    const seta = bancoSort.col===i ? `<span class="seta">${bancoSort.dir===1?'▲':'▼'}</span>` : "";
+    return `<th data-i="${i}" title="${escHtml(c)}">${escHtml(rotuloCol(c))}${seta}</th>`;
+  }).join("") + "</tr></thead>";
+
+  const tbody = "<tbody>" + rows.map(r => "<tr>" + r.map(v=>{
+    if(v===null || v==="") return `<td class="vazio-cel">—</td>`;
+    return `<td class="${ehNumero(v)?'num':''}">${escHtml(v)}</td>`;
+  }).join("") + "</tr>").join("") + "</tbody>";
+
+  tab.innerHTML = thead + tbody;
+  document.getElementById("banco-info").textContent =
+    `${rows.length}${rows.length!==BANCO_ROWS.length?' de '+BANCO_ROWS.length:''} registro${BANCO_ROWS.length!==1?'s':''} · ${BANCO_COLS.length} colunas`;
+
+  tab.querySelectorAll("thead th").forEach(th=>{
+    th.addEventListener("click",()=>{
+      const i = +th.dataset.i;
+      if(bancoSort.col===i) bancoSort.dir *= -1; else { bancoSort.col=i; bancoSort.dir=1; }
+      renderBanco();
+    });
+  });
+}
+
+function baixarArquivo(conteudo, nome, tipo, comBOM){
+  const partes = comBOM ? ["﻿", conteudo] : [conteudo];
+  const url = URL.createObjectURL(new Blob(partes, {type:tipo}));
+  const a = document.createElement("a");
+  a.href = url; a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+
+const carimbo = () => new Date().toISOString().slice(0,10);
+
+function exportarCSV(){
+  const sep = ";";
+  const esc = v => {
+    const s = (v==null) ? "" : String(v);
+    return /[";\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+  };
+  const linhas = [ BANCO_COLS.map(esc).join(sep) ];
+  BANCO_ROWS.forEach(r => linhas.push(r.map(esc).join(sep)));
+  baixarArquivo(linhas.join("\r\n"), `banco_aio_${carimbo()}.csv`, "text/csv;charset=utf-8;", true);
+}
+
+/* --- XLSX nativo, sem bibliotecas: monta o pacote OOXML num ZIP (store) --- */
+const CRC_TABELA = (()=>{
+  const t = new Uint32Array(256);
+  for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c = (c&1) ? (0xEDB88320 ^ (c>>>1)) : (c>>>1); t[n]=c>>>0; }
+  return t;
+})();
+function crc32(bytes){
+  let c = 0xFFFFFFFF;
+  for(let i=0;i<bytes.length;i++) c = CRC_TABELA[(c ^ bytes[i]) & 0xFF] ^ (c>>>8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function zipStore(arquivos){
+  const u16 = v => [v&0xFF,(v>>>8)&0xFF];
+  const u32 = v => [v&0xFF,(v>>>8)&0xFF,(v>>>16)&0xFF,(v>>>24)&0xFF];
+  const partes = [], central = [];
+  let offset = 0;
+  arquivos.forEach(f=>{
+    const crc = crc32(f.dados), n = f.nome.length, len = f.dados.length;
+    const lh = new Uint8Array([].concat(
+      u32(0x04034b50), u16(20), u16(0), u16(0), u16(0), u16(0),
+      u32(crc), u32(len), u32(len), u16(n), u16(0)
+    ));
+    partes.push(lh, f.nome, f.dados);
+    central.push({nome:f.nome, crc, len, offset});
+    offset += lh.length + n + len;
+  });
+  const centralPartes = [];
+  let centralSize = 0;
+  central.forEach(c=>{
+    const ch = new Uint8Array([].concat(
+      u32(0x02014b50), u16(20), u16(20), u16(0), u16(0), u16(0), u16(0),
+      u32(c.crc), u32(c.len), u32(c.len), u16(c.nome.length),
+      u16(0), u16(0), u16(0), u16(0), u32(0), u32(c.offset)
+    ));
+    centralPartes.push(ch, c.nome);
+    centralSize += ch.length + c.nome.length;
+  });
+  const eocd = new Uint8Array([].concat(
+    u32(0x06054b50), u16(0), u16(0), u16(central.length), u16(central.length),
+    u32(centralSize), u32(offset), u16(0)
+  ));
+  return new Blob([...partes, ...centralPartes, eocd],
+    {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+}
+const colLetra = n => { let s=""; n++; while(n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=(n-m-1)/26; } return s; };
+const escXml = s => String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[m]));
+
+function exportarXLSX(){
+  const enc = new TextEncoder();
+  const todas = [BANCO_COLS.map(rotuloCol), ...BANCO_ROWS];
+  const linhas = todas.map((r, ri)=>{
+    const celulas = r.map((v, ci)=>{
+      const ref = colLetra(ci)+(ri+1);
+      if(v===null || v===undefined || v==="") return `<c r="${ref}"/>`;
+      if(typeof v==="number" && isFinite(v)) return `<c r="${ref}"><v>${v}</v></c>`;
+      return `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${escXml(v)}</t></is></c>`;
+    }).join("");
+    return `<row r="${ri+1}">${celulas}</row>`;
+  }).join("");
+  const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+
+    `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`+
+    `<sheetData>${linhas}</sheetData></worksheet>`;
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+
+    `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">`+
+    `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>`+
+    `<Default Extension="xml" ContentType="application/xml"/>`+
+    `<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>`+
+    `<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>`;
+  const rels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+
+    `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`+
+    `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
+  const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+
+    `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">`+
+    `<sheets><sheet name="AIO" sheetId="1" r:id="rId1"/></sheets></workbook>`;
+  const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`+
+    `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`+
+    `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`;
+  const arquivos = [
+    {nome:enc.encode("[Content_Types].xml"),        dados:enc.encode(contentTypes)},
+    {nome:enc.encode("_rels/.rels"),                dados:enc.encode(rels)},
+    {nome:enc.encode("xl/workbook.xml"),            dados:enc.encode(workbook)},
+    {nome:enc.encode("xl/_rels/workbook.xml.rels"), dados:enc.encode(workbookRels)},
+    {nome:enc.encode("xl/worksheets/sheet1.xml"),   dados:enc.encode(sheet)},
+  ];
+  const url = URL.createObjectURL(zipStore(arquivos));
+  const a = document.createElement("a");
+  a.href = url; a.download = `banco_aio_${carimbo()}.xlsx`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+
+function initBanco(){
+  renderBanco();
+  document.getElementById("banco-busca").addEventListener("input", e=>{
+    bancoTermo = e.target.value.trim().toLowerCase(); renderBanco();
+  });
+  document.getElementById("btn-csv").addEventListener("click", exportarCSV);
+  document.getElementById("btn-xlsx").addEventListener("click", exportarXLSX);
+}
+
+/* ====================================================================
+   7) EVENTOS
    ==================================================================== */
 document.getElementById("chips").addEventListener("click",e=>{
   if(!e.target.classList.contains("chip"))return;
@@ -437,6 +688,7 @@ document.getElementById("busca").addEventListener("input",e=>{
 if(GERADO_EM && !GERADO_EM.includes("__")) document.getElementById("gerado").textContent = "gerado em "+GERADO_EM;
 initProgDrop();
 render();
+initBanco();
 </script>
 </body>
 </html>
