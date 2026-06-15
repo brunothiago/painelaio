@@ -72,12 +72,16 @@
     padding:16px 20px;margin-bottom:22px;
   }
   .gargalo h3{font-family:'Raleway',sans-serif;font-size:.95rem;margin-bottom:12px;color:var(--azul-escuro)}
-  .gbars{display:flex;gap:6px;align-items:flex-end;height:90px}
-  .gbar{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+  .gbars{display:flex;gap:6px;align-items:flex-end;min-height:104px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+  .gbar{flex:1 0 56px;min-width:56px;display:flex;flex-direction:column;align-items:center;gap:4px;height:104px;justify-content:flex-end}
   .gbar .barra{width:70%;max-width:34px;background:var(--azul-claro);border-radius:4px 4px 0 0;min-height:3px;transition:height .4s;position:relative}
   .gbar.hot .barra{background:var(--azul)}
   .gbar .gv{font-size:.72rem;font-weight:700;color:var(--azul-escuro)}
-  .gbar .gl{font-size:.6rem;color:var(--cinza-texto);text-align:center;line-height:1.1;height:24px;overflow:hidden}
+  .gbar .gl{font-size:.6rem;color:var(--cinza-texto);text-align:center;line-height:1.12;height:34px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+  @media(max-width:640px){
+    .gbar{flex:1 0 52px;min-width:52px}
+    .gbar .gl{font-size:.56rem}
+  }
 
   /* ---------- Controles ---------- */
   .controles{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
@@ -352,7 +356,7 @@ function render(){
   dados.filter(d=>!d.info.concluido).forEach(d=> cont[d.info.atualIdx]++);
   const maxc = Math.max(1,...cont);
   document.getElementById("gbars").innerHTML = ETAPAS.map((e,i)=>`
-    <div class="gbar ${cont[i]===maxc&&cont[i]>0?'hot':''}">
+    <div class="gbar ${cont[i]===maxc&&cont[i]>0?'hot':''}" title="${e}: ${cont[i]} AIO(s)">
       <div class="gv">${cont[i]||''}</div>
       <div class="barra" style="height:${cont[i]/maxc*60}px"></div>
       <div class="gl">${e}</div>
