@@ -317,9 +317,13 @@ const fmtValor = v => v == null ? '—' :
 function analisa(aio){
   const N = ETAPAS.length;
   const feitas = aio.datas.filter(Boolean).length;
-  const ultimoIdx = feitas-1;
-  const atualIdx = feitas < N ? feitas : N-1;
-  const concluido = feitas === N;
+  // Posição real: último índice com data preenchida (ignora lacunas no meio).
+  let ultimoIdx = -1;
+  for(let i=0;i<N;i++){ if(aio.datas[i]) ultimoIdx = i; }
+  // Concluído quando a etapa final (Emissão do AIO) está preenchida.
+  const concluido = !!aio.datas[N-1];
+  // Etapa atual = a próxima após a última preenchida (na posição real).
+  const atualIdx = concluido ? N-1 : Math.min(ultimoIdx+1, N-1);
   const ultimaData = ultimoIdx>=0 ? aio.datas[ultimoIdx] : null;
   const diasParado = (!concluido && ultimaData) ? diasEntre(ultimaData, HOJE.toISOString().slice(0,10)) : 0;
   const atrasado = !concluido && diasParado > 15;
