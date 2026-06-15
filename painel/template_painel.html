@@ -374,16 +374,6 @@ function limparEtapa(){ etapaSel = null; render(); }
 function render(){
   const dados = DADOS.map(a=>({...a, info:analisa(a)}));
 
-  const tot=dados.length;
-  const ok=dados.filter(d=>d.info.concluido).length;
-  const atr=dados.filter(d=>d.info.atrasado).length;
-  const and=tot-ok;
-  document.getElementById("resumo").innerHTML = `
-    <div class="stat"><div class="n">${tot}</div><div class="l">AIOs no painel</div></div>
-    <div class="stat and"><div class="n">${and}</div><div class="l">Em andamento</div></div>
-    <div class="stat atr"><div class="n">${atr}</div><div class="l">Atrasados (+15d)</div></div>
-    <div class="stat ok"><div class="n">${ok}</div><div class="l">Concluídos</div></div>`;
-
   // Cada AIO entra na barra da sua etapa atual; concluídos (emitidos) entram na última.
   const barIdx = d => d.info.concluido ? ETAPAS.length-1 : d.info.atualIdx;
   const cont = ETAPAS.map(()=>0);
@@ -412,6 +402,17 @@ function render(){
     }
     return true;
   });
+
+  // Cards de resumo: refletem os filtros aplicados (programa, busca, status, etapa).
+  const tot=lista.length;
+  const ok=lista.filter(d=>d.info.concluido).length;
+  const atr=lista.filter(d=>d.info.atrasado).length;
+  const and=tot-ok;
+  document.getElementById("resumo").innerHTML = `
+    <div class="stat"><div class="n">${tot}</div><div class="l">AIOs no painel</div></div>
+    <div class="stat and"><div class="n">${and}</div><div class="l">Em andamento</div></div>
+    <div class="stat atr"><div class="n">${atr}</div><div class="l">Atrasados (+15d)</div></div>
+    <div class="stat ok"><div class="n">${ok}</div><div class="l">Concluídos</div></div>`;
 
   const cont2 = document.getElementById("lista");
   if(!lista.length){ cont2.innerHTML = `<div class="vazio">Nenhum AIO encontrado para o filtro atual.</div>`; return; }
