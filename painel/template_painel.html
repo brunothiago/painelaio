@@ -73,9 +73,15 @@
   }
   .gargalo h3{font-family:'Raleway',sans-serif;font-size:.95rem;margin-bottom:12px;color:var(--azul-escuro)}
   .gbars{display:flex;gap:6px;align-items:flex-end;min-height:104px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
-  .gbar{flex:1 0 56px;min-width:56px;display:flex;flex-direction:column;align-items:center;gap:4px;height:104px;justify-content:flex-end}
+  .gbar{flex:1 0 56px;min-width:56px;display:flex;flex-direction:column;align-items:center;gap:4px;height:104px;justify-content:flex-end;cursor:pointer;border-radius:6px;transition:background .15s}
+  .gbar:hover{background:rgba(0,0,0,.04)}
   .gbar .barra{width:70%;max-width:34px;background:var(--azul-claro);border-radius:4px 4px 0 0;min-height:3px;transition:height .4s;position:relative}
   .gbar.hot .barra{background:var(--azul)}
+  .gbar.sel{background:rgba(30,80,160,.10)}
+  .gbar.sel .barra{background:var(--azul);outline:2px solid var(--azul);outline-offset:1px}
+  .gbar.sel .gl{color:var(--azul-escuro);font-weight:700}
+  .gbars-hint{font-family:'Inter',sans-serif;font-size:.72rem;font-weight:400;color:var(--cinza-texto);margin-left:8px}
+  .gbars-hint button{font:inherit;color:var(--azul);background:none;border:none;cursor:pointer;padding:0 4px;text-decoration:underline}
   .gbar .gv{font-size:.72rem;font-weight:700;color:var(--azul-escuro)}
   .gbar .gl{font-size:.6rem;color:var(--cinza-texto);text-align:center;line-height:1.12;height:34px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
   @media(max-width:640px){
@@ -236,7 +242,9 @@
   <div class="resumo" id="resumo"></div>
 
   <div class="gargalo">
-    <h3>Onde estão parados os AIOs (etapa atual de cada processo em andamento)</h3>
+    <h3>Onde estão parados os AIOs (etapa atual de cada processo em andamento)
+      <span id="gbars-hint" class="gbars-hint"></span>
+    </h3>
     <div class="gbars" id="gbars"></div>
   </div>
 
@@ -337,7 +345,18 @@ function analisa(aio){
 /* ====================================================================
    4) RENDER
    ==================================================================== */
-let filtro = "todos", termo = "", excluidos = new Set();
+let filtro = "todos", termo = "", excluidos = new Set(), etapaSel = null;
+
+/* Clique numa barra do gráfico → filtra a lista pelos AIOs parados naquela etapa
+   (clicar de novo na mesma barra limpa o filtro). */
+function toggleEtapa(i){
+  etapaSel = (etapaSel === i) ? null : i;
+  render();
+  if(etapaSel !== null){
+    document.getElementById("lista").scrollIntoView({behavior:"smooth", block:"start"});
+  }
+}
+function limparEtapa(){ etapaSel = null; render(); }
 
 function render(){
   const dados = DADOS.map(a=>({...a, info:analisa(a)}));
@@ -356,13 +375,17 @@ function render(){
   dados.filter(d=>!d.info.concluido).forEach(d=> cont[d.info.atualIdx]++);
   const maxc = Math.max(1,...cont);
   document.getElementById("gbars").innerHTML = ETAPAS.map((e,i)=>`
-    <div class="gbar ${cont[i]===maxc&&cont[i]>0?'hot':''}" title="${e}: ${cont[i]} AIO(s)">
+    <div class="gbar ${cont[i]===maxc&&cont[i]>0?'hot':''} ${etapaSel===i?'sel':''}"
+         title="${e}: ${cont[i]} AIO(s) — clique para filtrar" onclick="toggleEtapa(${i})">
       <div class="gv">${cont[i]||''}</div>
       <div class="barra" style="height:${cont[i]/maxc*60}px"></div>
       <div class="gl">${e}</div>
     </div>`).join("");
+  document.getElementById("gbars-hint").innerHTML = etapaSel===null ? "" :
+    `filtrando por <b>${ETAPAS[etapaSel]}</b> <button type="button" onclick="limparEtapa()">✕ limpar</button>`;
 
   const lista = dados.filter(d=>{
+    if(etapaSel!==null && (d.info.concluido || d.info.atualIdx!==etapaSel)) return false;
     if(filtro==="andamento" && d.info.concluido) return false;
     if(filtro==="atrasado" && !d.info.atrasado) return false;
     if(filtro==="concluido" && !d.info.concluido) return false;
