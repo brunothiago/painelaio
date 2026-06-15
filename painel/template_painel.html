@@ -315,10 +315,11 @@ const fmtValor = v => v == null ? '—' :
   'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 
 function analisa(aio){
+  const N = ETAPAS.length;
   const feitas = aio.datas.filter(Boolean).length;
   const ultimoIdx = feitas-1;
-  const atualIdx = feitas < 10 ? feitas : 9;
-  const concluido = feitas === 10;
+  const atualIdx = feitas < N ? feitas : N-1;
+  const concluido = feitas === N;
   const ultimaData = ultimoIdx>=0 ? aio.datas[ultimoIdx] : null;
   const diasParado = (!concluido && ultimaData) ? diasEntre(ultimaData, HOJE.toISOString().slice(0,10)) : 0;
   const atrasado = !concluido && diasParado > 15;
@@ -389,7 +390,7 @@ function render(){
       const dias = (feita && i>0 && d.datas[i-1]) ? `${diasEntre(d.datas[i-1],d.datas[i])} dias` : "";
       const data = feita ? fmt(d.datas[i]) : "";
       const icone = feita ? "✓" : (ehAtual ? "•" : "");
-      const marco = i===0?"Início":(i===ETAPAS.length-1?"Fim":`Etapa ${i+1}`);
+      const marco = i===0?"Início":(i===ETAPAS.length-1?`Etapa ${ETAPAS.length} (TGov)`:`Etapa ${i+1}`);
       return `<div class="step ${cls}">
         <div class="dias">${dias}</div>
         <div class="data ${data?'':'vazia'}">${data||'—'}</div>
@@ -402,7 +403,7 @@ function render(){
     return `<div class="aio">
       <div class="aio-cab">
         <div class="aio-id"><span class="num">${d.num}</span><span class="obj">${d.obj}</span></div>
-        <div class="badges">${parado}${badge}<span class="parado">${feitas}/10 etapas</span></div>
+        <div class="badges">${parado}${badge}<span class="parado">${feitas}/${ETAPAS.length} etapas</span></div>
       </div>
       <div class="aio-meta">
         <span class="meta-prog">${d.programa||'Programa não informado'}</span>
