@@ -713,10 +713,10 @@ document.getElementById("chips").addEventListener("click",e=>{
   if(!e.target.classList.contains("chip"))return;
   document.querySelectorAll(".chip").forEach(c=>c.classList.remove("ativo"));
   e.target.classList.add("ativo");
-  filtro=e.target.dataset.f; render();
+  filtro=e.target.dataset.f; etapaSel=null; render();
 });
 document.getElementById("busca").addEventListener("input",e=>{
-  termo=e.target.value.trim().toLowerCase(); render();
+  termo=e.target.value.trim().toLowerCase(); etapaSel=null; render();
 });
 
 if(GERADO_EM && !GERADO_EM.includes("__")) document.getElementById("gerado").textContent = "gerado em "+GERADO_EM;
