@@ -42,6 +42,7 @@ COLUNAS_ETAPAS = [
     "dt_assinatura_sex",   # 8  Assinatura SEx
     "dt_envio_sns",        # 9  Envio SNs
     "dt_aviso_sns_caixa",  # 10 Aviso SNs → Caixa
+    "dt_emissao_aio",      # 11 Emissão do AIO (TransfereGov)
 ]
 
 

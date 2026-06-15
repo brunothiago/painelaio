@@ -11,3 +11,4 @@ files_dasboard/
 *.zip
 painel/painel_aio.html
 .DS_Store
+.claude/

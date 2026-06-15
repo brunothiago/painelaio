@@ -30,6 +30,7 @@ NOVAS_COLUNAS = [
     ("dt_assinatura_sex",  "Assinatura SEx"),
     ("dt_envio_sns",       "Envio SNs"),
     ("dt_aviso_sns_caixa", "Aviso SNs → Caixa"),
+    ("dt_emissao_aio",     "Emissão do AIO"),  # etapa 11 — vem do TransfereGov
 ]
 
 

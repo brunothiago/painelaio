@@ -289,7 +289,8 @@ const ETAPAS = [
   "GAB-SE → Ofício",
   "Assinatura SEx",
   "Envio SNs",
-  "Aviso SNs → Caixa"
+  "Aviso SNs → Caixa",
+  "Emissão do AIO"
 ];
 
 /* ====================================================================
@@ -495,7 +496,8 @@ const ROTULOS_BANCO = {
   dt_processo_sns:"Processo na SNs", dt_elaboracao_nt:"Elaboração da NT",
   dt_envio_gabse:"Envio GAB-SE", dt_envio_dmpse:"Envio DMP-SE",
   dt_checklist_cgpac:"Check-list CGPAC", dt_gabse_oficio:"GAB-SE → Ofício",
-  dt_assinatura_sex:"Assinatura SEx", dt_envio_sns:"Envio SNs", dt_aviso_sns_caixa:"Aviso SNs → Caixa"
+  dt_assinatura_sex:"Assinatura SEx", dt_envio_sns:"Envio SNs", dt_aviso_sns_caixa:"Aviso SNs → Caixa",
+  dt_emissao_aio:"Emissão do AIO"
 };
 const rotuloCol = c => ROTULOS_BANCO[c] || c.replace(/_/g,' ').replace(/\b\w/g, m=>m.toUpperCase());
 const ehNumero = v => v!==null && v!=="" && typeof v==="number";
