@@ -238,9 +238,11 @@ def _parse_data_corpo_email(texto: str) -> datetime | None:
             tzinfo=_TZ_BR,
         )
 
-    # Inglês: May 22, 2026 at 4:45 PM
+    # Inglês (Outlook): "May 22, 2026 at 4:45 PM" e também
+    # "Monday, June 8, 2026 1:47:12 PM" (dia-da-semana ignorado, "at" e segundos
+    # opcionais, time de 24h ou com AM/PM).
     m = re.search(
-        r"([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})\s+at\s+(\d{1,2}):(\d{2})\s*(AM|PM)?",
+        r"([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})(?:\s+at)?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?",
         t,
         re.I,
     )
@@ -253,11 +255,13 @@ def _parse_data_corpo_email(texto: str) -> datetime | None:
         if mes:
             hora = int(m.group(4))
             minuto = int(m.group(5))
-            if m.group(6) and m.group(6).upper() == "PM" and hora < 12:
+            segundo = int(m.group(6) or 0)
+            ampm = m.group(7)
+            if ampm and ampm.upper() == "PM" and hora < 12:
                 hora += 12
-            if m.group(6) and m.group(6).upper() == "AM" and hora == 12:
+            if ampm and ampm.upper() == "AM" and hora == 12:
                 hora = 0
-            return datetime(int(m.group(3)), mes, int(m.group(2)), hora, minuto, tzinfo=_TZ_BR)
+            return datetime(int(m.group(3)), mes, int(m.group(2)), hora, minuto, segundo, tzinfo=_TZ_BR)
 
     return None
 
@@ -279,13 +283,13 @@ def extract_gepac_metadata_from_body(body: str) -> dict:
         if _GEPAC_RE.search(linha):
             out["email_remetente"] = linha
             trecho = body[m.end() : m.end() + 500]
-            dm = re.search(r"(?:Data|Date)\s*:\s*(.+?)(?:\r?\n)", trecho, re.I)
+            dm = re.search(r"(?:Data|Date|Sent|Enviad[oa])\s*:\s*(.+?)(?:\r?\n)", trecho, re.I)
             if dm:
                 out["data_aio_recebido"] = _parse_data_corpo_email(dm.group(1))
             break
 
     if not out["data_aio_recebido"]:
-        for m in re.finditer(r"(?:Data|Date)\s*:\s*(.+?)(?:\r?\n)", window, re.I):
+        for m in re.finditer(r"(?:Data|Date|Sent|Enviad[oa])\s*:\s*(.+?)(?:\r?\n)", window, re.I):
             dt = _parse_data_corpo_email(m.group(1))
             if dt:
                 out["data_aio_recebido"] = dt
@@ -508,7 +512,15 @@ def run_pipeline(dias: int = 2, dry_run: bool = False, atualizar: bool = False):
                 if not remetente:
                     log.warning("[%s] De: GEPAC07 não encontrado no corpo.", msg_id)
                 if not data_aio_recebido:
-                    log.warning("[%s] Data GEPAC07 não encontrada no corpo.", msg_id)
+                    # Fallback: data do cabeçalho Gmail (quando o corpo não traz parseável)
+                    try:
+                        data_aio_recebido = parsedate_to_datetime(headers.get("Date", ""))
+                    except Exception:
+                        data_aio_recebido = None
+                    if data_aio_recebido:
+                        log.info("[%s] Data do corpo ausente; usando header Date.", msg_id)
+                    else:
+                        log.warning("[%s] Data GEPAC07 não encontrada no corpo nem no header.", msg_id)
             else:
                 log.warning("[%s] Sem GEPAC07 no corpo; usando cabeçalhos Gmail.", msg_id)
                 remetente = headers.get("From", "")
