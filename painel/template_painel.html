@@ -102,6 +102,8 @@
     font-size:.82rem;font-weight:600;cursor:pointer;color:var(--cinza-texto);transition:.15s;
   }
   .chip.ativo{background:var(--azul);color:#fff;border-color:var(--azul)}
+  .chip.danger{color:#c0392b;border-color:#e7b3ad}
+  .chip.danger.ativo{background:#c0392b;color:#fff;border-color:#c0392b}
 
   /* ---------- Card do AIO ---------- */
   .aio{
@@ -255,6 +257,7 @@
       <span class="chip" data-f="andamento">Em andamento</span>
       <span class="chip" data-f="atrasado">Atrasados</span>
       <span class="chip" data-f="concluido">Concluídos</span>
+      <span class="chip danger" data-f="incoerente">Data incoerente</span>
     </div>
     <div class="prog-drop" id="prog-drop">
       <button class="prog-btn" id="prog-btn" type="button">
@@ -339,13 +342,23 @@ function analisa(aio){
   const ultimaData = ultimoIdx>=0 ? aio.datas[ultimoIdx] : null;
   const diasParado = (!concluido && ultimaData) ? diasEntre(ultimaData, HOJE.toISOString().slice(0,10)) : 0;
   const atrasado = !concluido && diasParado > 15;
-  return {feitas, ultimoIdx, atualIdx, concluido, diasParado, atrasado};
+  // Data incoerente: alguma data preenchida é anterior à etapa anterior já preenchida.
+  let incoerente = false, ant = null;
+  for(let i=0;i<N;i++){
+    const v = aio.datas[i];
+    if(!v) continue;
+    if(ant !== null && v < ant){ incoerente = true; break; }
+    ant = v;
+  }
+  return {feitas, ultimoIdx, atualIdx, concluido, diasParado, atrasado, incoerente};
 }
 
 /* ====================================================================
    4) RENDER
    ==================================================================== */
-let filtro = "todos", termo = "", excluidos = new Set(), etapaSel = null;
+/* Programa(s) desligado(s) por padrão na seleção. */
+const PROGRAMAS_OFF_PADRAO = ["Minha Casa, Minha Vida - MCMV FNHIS Sub 50"];
+let filtro = "todos", termo = "", excluidos = new Set(PROGRAMAS_OFF_PADRAO), etapaSel = null;
 
 /* Clique numa barra do gráfico → filtra a lista pelos AIOs parados naquela etapa
    (clicar de novo na mesma barra limpa o filtro). */
@@ -391,6 +404,7 @@ function render(){
     if(filtro==="andamento" && d.info.concluido) return false;
     if(filtro==="atrasado" && !d.info.atrasado) return false;
     if(filtro==="concluido" && !d.info.concluido) return false;
+    if(filtro==="incoerente" && !d.info.incoerente) return false;
     if(excluidos.size > 0 && excluidos.has(d.programa||'')) return false;
     if(termo){
       const t=(d.num+" "+d.obj+" "+(d.programa||"")).toLowerCase();
@@ -487,7 +501,8 @@ function initProgDrop(){
 
     const cb = document.createElement("input");
     cb.type = "checkbox";
-    cb.checked = true;
+    cb.checked = !excluidos.has(prog);
+    if(!cb.checked) item.classList.add("desmarcado");
 
     const label = document.createElement("span");
     label.textContent = prog;
