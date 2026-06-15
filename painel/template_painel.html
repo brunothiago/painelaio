@@ -242,7 +242,7 @@
   <div class="resumo" id="resumo"></div>
 
   <div class="gargalo">
-    <h3>Onde estão parados os AIOs (etapa atual de cada processo em andamento)
+    <h3>Distribuição dos AIOs por etapa atual (a última, “Emissão do AIO”, traz os emitidos/concluídos)
       <span id="gbars-hint" class="gbars-hint"></span>
     </h3>
     <div class="gbars" id="gbars"></div>
@@ -371,8 +371,10 @@ function render(){
     <div class="stat atr"><div class="n">${atr}</div><div class="l">Atrasados (+15d)</div></div>
     <div class="stat ok"><div class="n">${ok}</div><div class="l">Concluídos</div></div>`;
 
+  // Cada AIO entra na barra da sua etapa atual; concluídos (emitidos) entram na última.
+  const barIdx = d => d.info.concluido ? ETAPAS.length-1 : d.info.atualIdx;
   const cont = ETAPAS.map(()=>0);
-  dados.filter(d=>!d.info.concluido).forEach(d=> cont[d.info.atualIdx]++);
+  dados.forEach(d=> cont[barIdx(d)]++);
   const maxc = Math.max(1,...cont);
   document.getElementById("gbars").innerHTML = ETAPAS.map((e,i)=>`
     <div class="gbar ${cont[i]===maxc&&cont[i]>0?'hot':''} ${etapaSel===i?'sel':''}"
@@ -385,7 +387,7 @@ function render(){
     `filtrando por <b>${ETAPAS[etapaSel]}</b> <button type="button" onclick="limparEtapa()">✕ limpar</button>`;
 
   const lista = dados.filter(d=>{
-    if(etapaSel!==null && (d.info.concluido || d.info.atualIdx!==etapaSel)) return false;
+    if(etapaSel!==null && barIdx(d)!==etapaSel) return false;
     if(filtro==="andamento" && d.info.concluido) return false;
     if(filtro==="atrasado" && !d.info.atrasado) return false;
     if(filtro==="concluido" && !d.info.concluido) return false;
