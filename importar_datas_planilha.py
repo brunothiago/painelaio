@@ -115,6 +115,60 @@ def casar(linha, por_instr, por_tc):
     return None, "nao-encontrado"
 
 
+def importar(arquivo, conn, commit=False, aba=ABA_PADRAO):
+    """Atualiza as 3 datas de etapa por instrumento/tc. Retorna dict de estatísticas.
+
+    `conn` é uma conexão psycopg2 já aberta (não é fechada aqui)."""
+    linhas = ler_planilha(arquivo, aba)
+    print(f"Planilha: {len(linhas)} linha(s) com identificador e ao menos 1 data.")
+
+    por_instr, por_tc = indexar_banco(conn)
+    print(f"Banco: {len(por_instr)} instrumento(s) / {len(por_tc)} TC(s) indexados.\n")
+
+    updates = []   # (id, {coluna: date})
+    nao_casou = []
+    for ln in linhas:
+        _id, origem = casar(ln, por_instr, por_tc)
+        if _id is None:
+            nao_casou.append((ln, origem))
+            continue
+        datas = {c: d for c, d in ln["datas"].items() if d is not None}
+        updates.append((_id, datas, ln, origem))
+
+    print(f"== CASARAM: {len(updates)} | NÃO casaram: {len(nao_casou)} ==\n")
+    for _id, datas, ln, origem in updates:
+        ds = ", ".join(f"{c}={d.isoformat()}" for c, d in datas.items())
+        print(f"  [{origem:11s}] {str(ln['instr_raw']):14s} -> id {_id} | {ds}")
+
+    if nao_casou:
+        print("\n-- NÃO casaram (precisam de ajuste manual): --")
+        for ln, motivo in nao_casou:
+            print(f"  {str(ln['instr_raw']):14s} ({motivo}) | {ln['municipio']}")
+
+    stats = {"casaram": len(updates), "nao_casaram": len(nao_casou), "atualizados": 0}
+
+    if not commit:
+        print(f"\n[DRY-RUN] Nada foi gravado. Rode com --commit para aplicar "
+              f"{len(updates)} update(s).")
+        return stats
+
+    n = 0
+    with conn.cursor() as cur:
+        for _id, datas, _ln, _o in updates:
+            if not datas:
+                continue
+            sets = ", ".join(f"{c} = %s" for c in datas)
+            cur.execute(
+                f"UPDATE se_cgpac.aio_solicitacoes SET {sets} WHERE id = %s",
+                list(datas.values()) + [_id],
+            )
+            n += cur.rowcount
+    conn.commit()
+    stats["atualizados"] = n
+    print(f"\n[OK] {n} linha(s) atualizada(s) no banco.")
+    return stats
+
+
 def main():
     ap = argparse.ArgumentParser(description="Importa datas da planilha AIO para o banco.")
     ap.add_argument("--arquivo", required=True, help="Caminho do .xlsx da planilha.")
@@ -123,52 +177,9 @@ def main():
                     help="Grava no banco. Sem esta flag, roda em dry-run (só relatório).")
     args = ap.parse_args()
 
-    linhas = ler_planilha(args.arquivo, args.aba)
-    print(f"Planilha: {len(linhas)} linha(s) com identificador e ao menos 1 data.")
-
     conn = get_db_connection()
     try:
-        por_instr, por_tc = indexar_banco(conn)
-        print(f"Banco: {len(por_instr)} instrumento(s) / {len(por_tc)} TC(s) indexados.\n")
-
-        updates = []   # (id, {coluna: date})
-        nao_casou = []
-        for ln in linhas:
-            _id, origem = casar(ln, por_instr, por_tc)
-            if _id is None:
-                nao_casou.append((ln, origem))
-                continue
-            datas = {c: d for c, d in ln["datas"].items() if d is not None}
-            updates.append((_id, datas, ln, origem))
-
-        print(f"== CASARAM: {len(updates)} | NÃO casaram: {len(nao_casou)} ==\n")
-        for _id, datas, ln, origem in updates:
-            ds = ", ".join(f"{c}={d.isoformat()}" for c, d in datas.items())
-            print(f"  [{origem:11s}] {str(ln['instr_raw']):14s} -> id {_id} | {ds}")
-
-        if nao_casou:
-            print("\n-- NÃO casaram (precisam de ajuste manual): --")
-            for ln, motivo in nao_casou:
-                print(f"  {str(ln['instr_raw']):14s} ({motivo}) | {ln['municipio']}")
-
-        if not args.commit:
-            print(f"\n[DRY-RUN] Nada foi gravado. Rode com --commit para aplicar "
-                  f"{len(updates)} update(s).")
-            return
-
-        n = 0
-        with conn.cursor() as cur:
-            for _id, datas, _ln, _o in updates:
-                if not datas:
-                    continue
-                sets = ", ".join(f"{c} = %s" for c in datas)
-                cur.execute(
-                    f"UPDATE se_cgpac.aio_solicitacoes SET {sets} WHERE id = %s",
-                    list(datas.values()) + [_id],
-                )
-                n += cur.rowcount
-        conn.commit()
-        print(f"\n[OK] {n} linha(s) atualizada(s) no banco.")
+        importar(args.arquivo, conn, commit=args.commit, aba=args.aba)
     finally:
         conn.close()
 

@@ -153,44 +153,40 @@ def chaves_existentes(conn):
     return existentes
 
 
-def main():
-    ap = argparse.ArgumentParser(description="Insere AIOs faltantes a partir da planilha.")
-    ap.add_argument("--arquivo", required=True)
-    ap.add_argument("--aba", default=ABA_PADRAO)
-    ap.add_argument("--commit", action="store_true",
-                    help="Grava no banco. Sem a flag, roda em dry-run.")
-    args = ap.parse_args()
+def importar(arquivo, conn, commit=False, aba=ABA_PADRAO):
+    """Insere AIOs ausentes a partir da planilha. Retorna dict de estatísticas.
 
-    linhas = ler_planilha(args.arquivo, args.aba)
+    `conn` é uma conexão psycopg2 já aberta (não é fechada aqui)."""
+    linhas = ler_planilha(arquivo, aba)
     print(f"Planilha: {len(linhas)} linha(s) com instrumento.")
 
-    conn = get_db_connection()
-    try:
-        existentes = chaves_existentes(conn)
-        novos, ja_existem, vistos = [], 0, set()
-        for ln in linhas:
-            k = ln["chave"]
-            if k and k in existentes:
-                ja_existem += 1
-                continue
-            if k and k in vistos:        # duplicata dentro da própria planilha
-                continue
-            if k:
-                vistos.add(k)
-            novos.append(ln)
+    existentes = chaves_existentes(conn)
+    novos, ja_existem, vistos = [], 0, set()
+    for ln in linhas:
+        k = ln["chave"]
+        if k and k in existentes:
+            ja_existem += 1
+            continue
+        if k and k in vistos:        # duplicata dentro da própria planilha
+            continue
+        if k:
+            vistos.add(k)
+        novos.append(ln)
 
-        print(f"Já existem no banco (pulados): {ja_existem}")
-        print(f"A INSERIR (novos): {len(novos)}\n")
-        for ln in novos:
-            ds = ", ".join(f"{c}={d.isoformat()}" for c, d in ln["datas"].items()) or "(sem datas)"
-            val = f"R$ {ln['valor']:,.2f}" if ln["valor"] is not None else "—"
-            print(f"  {ln['instr_raw']:16s} | {str(ln['municipio']):24.24s} {str(ln['uf'] or ''):2s} | {val:>18s} | {ds}")
+    print(f"Já existem no banco (pulados): {ja_existem}")
+    print(f"A INSERIR (novos): {len(novos)}\n")
+    for ln in novos:
+        ds = ", ".join(f"{c}={d.isoformat()}" for c, d in ln["datas"].items()) or "(sem datas)"
+        val = f"R$ {ln['valor']:,.2f}" if ln["valor"] is not None else "—"
+        print(f"  {ln['instr_raw']:16s} | {str(ln['municipio']):24.24s} {str(ln['uf'] or ''):2s} | {val:>18s} | {ds}")
 
-        if not args.commit:
-            print(f"\n[DRY-RUN] Nada gravado. Rode com --commit para inserir {len(novos)} AIO(s).")
-            return
+    stats = {"linhas": len(linhas), "ja_existem": ja_existem, "novos": len(novos), "inseridos": 0}
 
-        sql = """
+    if not commit:
+        print(f"\n[DRY-RUN] Nada gravado. Rode com --commit para inserir {len(novos)} AIO(s).")
+        return stats
+
+    sql = """
             INSERT INTO se_cgpac.aio_solicitacoes
                 (instrumento, objeto, municipio, uf, valor_investimento,
                  dt_checklist_cgpac, dt_gabse_oficio, dt_assinatura_sex, email_id)
@@ -202,24 +198,39 @@ def main():
                 dt_assinatura_sex  = EXCLUDED.dt_assinatura_sex,
                 valor_investimento = EXCLUDED.valor_investimento
         """
-        n = 0
-        with conn.cursor() as cur:
-            for ln in novos:
-                params = {
-                    "instrumento": ln["instr_raw"][:20],
-                    "objeto": ln["objeto"],
-                    "municipio": ln["municipio"],
-                    "uf": ln["uf"],
-                    "valor": ln["valor"],
-                    "dt_checklist_cgpac": ln["datas"].get("dt_checklist_cgpac"),
-                    "dt_gabse_oficio": ln["datas"].get("dt_gabse_oficio"),
-                    "dt_assinatura_sex": ln["datas"].get("dt_assinatura_sex"),
-                    "email_id": f"PLANILHA-{ln['chave'] or ln['linha']}",
-                }
-                cur.execute(sql, params)
-                n += 1
-        conn.commit()
-        print(f"\n[OK] {n} AIO(s) inserido(s)/atualizado(s) no banco.")
+    n = 0
+    with conn.cursor() as cur:
+        for ln in novos:
+            params = {
+                "instrumento": ln["instr_raw"][:20],
+                "objeto": ln["objeto"],
+                "municipio": ln["municipio"],
+                "uf": ln["uf"],
+                "valor": ln["valor"],
+                "dt_checklist_cgpac": ln["datas"].get("dt_checklist_cgpac"),
+                "dt_gabse_oficio": ln["datas"].get("dt_gabse_oficio"),
+                "dt_assinatura_sex": ln["datas"].get("dt_assinatura_sex"),
+                "email_id": f"PLANILHA-{ln['chave'] or ln['linha']}",
+            }
+            cur.execute(sql, params)
+            n += 1
+    conn.commit()
+    stats["inseridos"] = n
+    print(f"\n[OK] {n} AIO(s) inserido(s)/atualizado(s) no banco.")
+    return stats
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Insere AIOs faltantes a partir da planilha.")
+    ap.add_argument("--arquivo", required=True)
+    ap.add_argument("--aba", default=ABA_PADRAO)
+    ap.add_argument("--commit", action="store_true",
+                    help="Grava no banco. Sem a flag, roda em dry-run.")
+    args = ap.parse_args()
+
+    conn = get_db_connection()
+    try:
+        importar(args.arquivo, conn, commit=args.commit, aba=args.aba)
     finally:
         conn.close()
 

@@ -10,5 +10,6 @@ venv/
 files_dasboard/
 *.zip
 painel/painel_aio.html
+dados_planilha/
 .DS_Store
 .claude/
