@@ -374,23 +374,10 @@ function limparEtapa(){ etapaSel = null; render(); }
 function render(){
   const dados = DADOS.map(a=>({...a, info:analisa(a)}));
 
-  // Cada AIO entra na barra da sua etapa atual; concluídos (emitidos) entram na última.
   const barIdx = d => d.info.concluido ? ETAPAS.length-1 : d.info.atualIdx;
-  const cont = ETAPAS.map(()=>0);
-  dados.forEach(d=> cont[barIdx(d)]++);
-  const maxc = Math.max(1,...cont);
-  document.getElementById("gbars").innerHTML = ETAPAS.map((e,i)=>`
-    <div class="gbar ${cont[i]===maxc&&cont[i]>0?'hot':''} ${etapaSel===i?'sel':''}"
-         title="${e}: ${cont[i]} AIO(s) — clique para filtrar" onclick="toggleEtapa(${i})">
-      <div class="gv">${cont[i]||''}</div>
-      <div class="barra" style="height:${cont[i]/maxc*60}px"></div>
-      <div class="gl">${e}</div>
-    </div>`).join("");
-  document.getElementById("gbars-hint").innerHTML = etapaSel===null ? "" :
-    `filtrando por <b>${ETAPAS[etapaSel]}</b> <button type="button" onclick="limparEtapa()">✕ limpar</button>`;
 
-  const lista = dados.filter(d=>{
-    if(etapaSel!==null && barIdx(d)!==etapaSel) return false;
+  // Base: aplica programa, busca e status (NÃO a etapa clicada no gráfico).
+  const base = dados.filter(d=>{
     if(filtro==="andamento" && d.info.concluido) return false;
     if(filtro==="atrasado" && !d.info.atrasado) return false;
     if(filtro==="concluido" && !d.info.concluido) return false;
@@ -402,6 +389,23 @@ function render(){
     }
     return true;
   });
+
+  // Gráfico: distribuição da base por etapa atual (concluídos na última barra).
+  const cont = ETAPAS.map(()=>0);
+  base.forEach(d=> cont[barIdx(d)]++);
+  const maxc = Math.max(1,...cont);
+  document.getElementById("gbars").innerHTML = ETAPAS.map((e,i)=>`
+    <div class="gbar ${cont[i]===maxc&&cont[i]>0?'hot':''} ${etapaSel===i?'sel':''}"
+         title="${e}: ${cont[i]} AIO(s) — clique para filtrar" onclick="toggleEtapa(${i})">
+      <div class="gv">${cont[i]||''}</div>
+      <div class="barra" style="height:${cont[i]/maxc*60}px"></div>
+      <div class="gl">${e}</div>
+    </div>`).join("");
+  document.getElementById("gbars-hint").innerHTML = etapaSel===null ? "" :
+    `filtrando por <b>${ETAPAS[etapaSel]}</b> <button type="button" onclick="limparEtapa()">✕ limpar</button>`;
+
+  // Lista: a base + filtro de etapa (clique no gráfico).
+  const lista = etapaSel===null ? base : base.filter(d=> barIdx(d)===etapaSel);
 
   // Cards de resumo: refletem os filtros aplicados (programa, busca, status, etapa).
   const tot=lista.length;
