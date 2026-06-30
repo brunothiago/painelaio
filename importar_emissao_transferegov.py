@@ -25,7 +25,7 @@ SQL_EMISSOES = """
            MAX(a.dte_emissao_aio_instrumento_contratual) AS dt_emissao
     FROM se_cgpac.aio_solicitacoes s
     JOIN mcid_transferegov.tab_convenios c
-      ON c.num_convenio = s.instrumento::numeric
+      ON s.instrumento::numeric = CASE WHEN c.num_convenio ~ '^[0-9]+$' THEN c.num_convenio::numeric END
     JOIN mcid_transferegov.tab_inst_cont_proposta_aio_modulo_empresas a
       ON a.cod_proposta = c.cod_proposta
     WHERE s.instrumento ~ '^[0-9]+$'
