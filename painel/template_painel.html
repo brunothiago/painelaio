@@ -356,8 +356,8 @@ function analisa(aio){
 /* ====================================================================
    4) RENDER
    ==================================================================== */
-/* Programa(s) desligado(s) por padrão na seleção. */
-const PROGRAMAS_OFF_PADRAO = ["Minha Casa, Minha Vida - MCMV FNHIS Sub 50"];
+/* Programa(s) desligado(s) por padrão na seleção. Vazio = todos ligados ao abrir. */
+const PROGRAMAS_OFF_PADRAO = [];
 let filtro = "todos", termo = "", excluidos = new Set(PROGRAMAS_OFF_PADRAO), etapaSel = null;
 
 /* Clique numa barra do gráfico → filtra a lista pelos AIOs parados naquela etapa
