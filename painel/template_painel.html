@@ -114,6 +114,9 @@
   .aio-id{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
   .aio-id .num{font-family:'Raleway',sans-serif;font-weight:800;font-size:1.15rem;color:var(--azul)}
   .aio-id .obj{font-size:.85rem;color:var(--cinza-texto)}
+  .saci-link{font-size:.72rem;font-weight:700;color:var(--azul);text-decoration:none;border:1px solid var(--azul);border-radius:12px;padding:1px 9px;white-space:nowrap;transition:background .15s,color .15s}
+  .saci-link:hover{background:var(--azul);color:#fff}
+  .saci-link::after{content:" ↗";font-weight:400}
   .badges{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .badge{font-size:.72rem;font-weight:700;padding:4px 11px;border-radius:20px;text-transform:uppercase;letter-spacing:.3px}
   .badge.ok{background:#E3F5E1;color:var(--verde)}
@@ -454,7 +457,7 @@ function render(){
 
     return `<div class="aio">
       <div class="aio-cab">
-        <div class="aio-id"><span class="num">${d.num}</span><span class="obj">${d.obj}</span></div>
+        <div class="aio-id"><span class="num">${d.num}</span>${d.saci?`<a class="saci-link" href="${d.saci}" target="_blank" rel="noopener">SACI</a>`:``}<span class="obj">${d.obj}</span></div>
         <div class="badges">${parado}${badge}<span class="parado">${feitas}/${ETAPAS.length} etapas</span></div>
       </div>
       <div class="aio-meta">

@@ -29,6 +29,10 @@ PH_GERADO = "/*__GERADO_EM__*/"
 PH_BANCO_COLS = "/*__BANCO_COLS__*/[]"
 PH_BANCO_ROWS = "/*__BANCO_ROWS__*/[]"
 
+# Link do SACI por instrumento: cod_tci vem de se_saci.view_mat_carteira_investimento
+# (num_convenio == instrumento). A URL final é SACI_BASE + cod_tci.
+SACI_BASE = "https://saci.cidades.gov.br/contratos/"
+
 # Mapeamento das 10 etapas → colunas de data (ordem exata igual ao template)
 # Etapa 1 já existia na tabela; as outras foram adicionadas por migrar_colunas_etapas.py
 COLUNAS_ETAPAS = [
@@ -68,8 +72,29 @@ def _banco_safe(v):
     return v
 
 
-def buscar_banco(conn):
-    """Lê a tabela inteira (todas as colunas) para a tabela exportável do painel."""
+def buscar_cod_tci(conn):
+    """Retorna {instrumento(texto): cod_tci} a partir da view do SACI.
+
+    Casa instrumento == num_convenio (ambos comparados como texto). Cada
+    instrumento mapeia para um único cod_tci na carteira de investimento.
+    """
+    sql = """
+        SELECT DISTINCT v.num_convenio::text AS instrumento, v.cod_tci
+        FROM se_saci.view_mat_carteira_investimento v
+        WHERE v.cod_tci IS NOT NULL AND v.num_convenio IS NOT NULL
+    """
+    with conn.cursor() as cur:
+        cur.execute(sql)
+        return {instr: cod for instr, cod in cur.fetchall()}
+
+
+def _link_saci(cod_tci):
+    """Monta a URL do contrato no SACI, ou None se não houver cod_tci."""
+    return f"{SACI_BASE}{cod_tci}" if cod_tci else None
+
+
+def buscar_banco(conn, cod_tci_por_instr):
+    """Lê a tabela inteira (todas as colunas) + coluna link_saci para exportação."""
     sql = (
         "SELECT * FROM se_cgpac.aio_solicitacoes"
         " ORDER BY data_aio_recebido DESC NULLS LAST, id DESC"
@@ -77,11 +102,17 @@ def buscar_banco(conn):
     with conn.cursor() as cur:
         cur.execute(sql)
         cols = [c[0] for c in cur.description]
-        rows = [[_banco_safe(v) for v in row] for row in cur.fetchall()]
-    return cols, rows
+        idx_instr = cols.index("instrumento") if "instrumento" in cols else None
+        rows = []
+        for row in cur.fetchall():
+            valores = [_banco_safe(v) for v in row]
+            instr = str(row[idx_instr]) if idx_instr is not None and row[idx_instr] is not None else None
+            valores.append(_link_saci(cod_tci_por_instr.get(instr)))
+            rows.append(valores)
+    return cols + ["link_saci"], rows
 
 
-def buscar_aios(conn):
+def buscar_aios(conn, cod_tci_por_instr):
     extras = ["instrumento", "tc", "objeto", "municipio", "uf",
               "valor_investimento", "programa_descricao"]
     cols = ", ".join(extras + COLUNAS_ETAPAS)
@@ -115,6 +146,7 @@ def buscar_aios(conn):
                 "programa": r.get("programa_descricao") or "",
                 "valor": float(valor) if valor is not None else None,
                 "datas": [_iso(r.get(c)) for c in COLUNAS_ETAPAS],
+                "saci": _link_saci(cod_tci_por_instr.get(str(instrumento) if instrumento else None)),
             }
 
 
@@ -125,8 +157,9 @@ def main():
 
     conn = get_db_connection()
     try:
-        dados = list(buscar_aios(conn))
-        banco_cols, banco_rows = buscar_banco(conn)
+        cod_tci_por_instr = buscar_cod_tci(conn)
+        dados = list(buscar_aios(conn, cod_tci_por_instr))
+        banco_cols, banco_rows = buscar_banco(conn, cod_tci_por_instr)
     finally:
         conn.close()
 
