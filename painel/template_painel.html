@@ -96,6 +96,19 @@
     border-radius:8px;min-width:240px;background:#fff;color:var(--azul-escuro);
   }
   .controles input:focus{outline:2px solid var(--azul);border-color:var(--azul)}
+
+  /* ---------- Botão que recolhe/expande a lista de AIOs ---------- */
+  .lista-toggle{display:flex;align-items:center;justify-content:center;gap:11px;cursor:pointer;
+    width:min(560px,100%);margin:0 auto 16px;
+    background:var(--azul);border:1px solid var(--azul);border-radius:14px;
+    padding:16px 28px;font-family:'Raleway',sans-serif;font-weight:800;
+    font-size:1.18rem;color:#fff;
+    box-shadow:0 3px 10px rgba(19,81,180,.28);transition:background .15s,box-shadow .15s,transform .05s}
+  .lista-toggle:hover{background:var(--azul-escuro);border-color:var(--azul-escuro);box-shadow:0 5px 16px rgba(7,29,65,.32)}
+  .lista-toggle:active{transform:translateY(1px)}
+  .lista-toggle .lt-seta{transition:transform .18s;display:inline-block;color:#fff;font-size:1.05rem}
+  .lista-toggle.aberto .lt-seta{transform:rotate(90deg)}
+  #lista.oculto{display:none}
   .chips{display:flex;gap:8px;flex-wrap:wrap}
   .chip{
     border:1px solid var(--borda);background:#fff;border-radius:20px;padding:7px 16px;
@@ -110,7 +123,11 @@
     background:var(--card);border:1px solid var(--borda);border-radius:14px;
     padding:20px 22px 8px;margin-bottom:16px;box-shadow:0 1px 3px rgba(7,29,65,.04);
   }
-  .aio-cab{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+  .aio-cab{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px;cursor:pointer}
+  .aio-seta{color:var(--azul);font-size:.8rem;transition:transform .18s;display:inline-block}
+  .aio.aberto .aio-seta{transform:rotate(90deg)}
+  .aio-corpo{display:none}
+  .aio.aberto .aio-corpo{display:block}
   .aio-id{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
   .aio-id .num{font-family:'Raleway',sans-serif;font-weight:800;font-size:1.15rem;color:var(--azul)}
   .aio-id .obj{font-size:.85rem;color:var(--cinza-texto)}
@@ -271,7 +288,12 @@
     </div>
   </div>
 
-  <div id="lista"></div>
+  <button class="lista-toggle" id="lista-toggle" type="button" onclick="toggleLista()">
+    <span class="lt-seta">▸</span>
+    <span id="lista-toggle-txt">Mostrar lista de AIOs</span>
+  </button>
+
+  <div id="lista" class="oculto"></div>
 
   <section class="banco">
     <div class="banco-cab">
@@ -362,11 +384,14 @@ function analisa(aio){
 /* Programa(s) desligado(s) por padrão na seleção. Vazio = todos ligados ao abrir. */
 const PROGRAMAS_OFF_PADRAO = [];
 let filtro = "todos", termo = "", excluidos = new Set(PROGRAMAS_OFF_PADRAO), etapaSel = null;
+let listaAberta = false;   // lista de cards começa recolhida
+function toggleLista(){ listaAberta = !listaAberta; render(); }
 
 /* Clique numa barra do gráfico → filtra a lista pelos AIOs parados naquela etapa
    (clicar de novo na mesma barra limpa o filtro). */
 function toggleEtapa(i){
   etapaSel = (etapaSel === i) ? null : i;
+  if(etapaSel !== null) listaAberta = true;
   render();
   if(etapaSel !== null){
     document.getElementById("lista").scrollIntoView({behavior:"smooth", block:"start"});
@@ -421,7 +446,14 @@ function render(){
     <div class="stat atr"><div class="n">${atr}</div><div class="l">Atrasados (+15d)</div></div>
     <div class="stat ok"><div class="n">${ok}</div><div class="l">Concluídos</div></div>`;
 
+  // Botão-mestre: rótulo + contador; a lista só é montada quando aberta.
+  document.getElementById("lista-toggle-txt").textContent =
+    `${listaAberta ? "Ocultar" : "Mostrar"} lista de AIOs (${lista.length})`;
+  document.getElementById("lista-toggle").classList.toggle("aberto", listaAberta);
+
   const cont2 = document.getElementById("lista");
+  cont2.classList.toggle("oculto", !listaAberta);
+  if(!listaAberta){ cont2.innerHTML = ""; return; }
   if(!lista.length){ cont2.innerHTML = `<div class="vazio">Nenhum AIO encontrado para o filtro atual.</div>`; return; }
 
   cont2.innerHTML = lista.map(d=>{
@@ -455,19 +487,21 @@ function render(){
       </div>`;
     }).join("");
 
-    return `<div class="aio">
-      <div class="aio-cab">
-        <div class="aio-id"><span class="num">${d.num}</span>${d.saci?`<a class="saci-link" href="${d.saci}" target="_blank" rel="noopener">SACI</a>`:``}<span class="obj">${d.obj}</span></div>
+    return `<div class="aio aberto">
+      <div class="aio-cab" onclick="this.closest('.aio').classList.toggle('aberto')">
+        <div class="aio-id"><span class="aio-seta">▸</span><span class="num">${d.num}</span>${d.saci?`<a class="saci-link" href="${d.saci}" target="_blank" rel="noopener" onclick="event.stopPropagation()">SACI</a>`:``}<span class="obj">${d.obj}</span></div>
         <div class="badges">${parado}${badge}<span class="parado">${feitas}/${ETAPAS.length} etapas</span></div>
       </div>
-      <div class="aio-meta">
-        <span class="meta-prog">${d.programa||'Programa não informado'}</span>
-        <span class="meta-val">${fmtValor(d.valor)}</span>
+      <div class="aio-corpo">
+        <div class="aio-meta">
+          <span class="meta-prog">${d.programa||'Programa não informado'}</span>
+          <span class="meta-val">${fmtValor(d.valor)}</span>
+        </div>
+        <div class="scroll"><div class="stepper">
+          <div class="track"></div><div class="fill" style="width:${fill}%"></div>
+          ${steps}
+        </div></div>
       </div>
-      <div class="scroll"><div class="stepper">
-        <div class="track"></div><div class="fill" style="width:${fill}%"></div>
-        ${steps}
-      </div></div>
     </div>`;
   }).join("");
 }
@@ -529,6 +563,7 @@ function initProgDrop(){
         item.classList.add("desmarcado");
       }
       atualizaRotulo();
+      listaAberta = true;
       render();
     });
 
@@ -554,7 +589,7 @@ const ROTULOS_BANCO = {
   dt_envio_gabse:"Envio GAB-SE", dt_envio_dmpse:"Envio DMP-SE",
   dt_checklist_cgpac:"Check-list CGPAC", dt_gabse_oficio:"GAB-SE → Ofício",
   dt_assinatura_sex:"Assinatura SEx", dt_envio_sns:"Envio SNs", dt_aviso_sns_caixa:"Aviso SNs → Caixa",
-  dt_emissao_aio:"Emissão do AIO"
+  dt_emissao_aio:"Emissão do AIO", link_saci:"SACI"
 };
 const rotuloCol = c => ROTULOS_BANCO[c] || c.replace(/_/g,' ').replace(/\b\w/g, m=>m.toUpperCase());
 const ehNumero = v => v!==null && v!=="" && typeof v==="number";
@@ -591,8 +626,11 @@ function renderBanco(){
     return `<th data-i="${i}" title="${escHtml(c)}">${escHtml(rotuloCol(c))}${seta}</th>`;
   }).join("") + "</tr></thead>";
 
-  const tbody = "<tbody>" + rows.map(r => "<tr>" + r.map(v=>{
+  const tbody = "<tbody>" + rows.map(r => "<tr>" + r.map((v,ci)=>{
     if(v===null || v==="") return `<td class="vazio-cel">—</td>`;
+    if(BANCO_COLS[ci]==="link_saci"){
+      return `<td class="saci-cel"><a class="saci-link" href="${escHtml(v)}" target="_blank" rel="noopener">SACI</a></td>`;
+    }
     return `<td class="${ehNumero(v)?'num':''}">${escHtml(v)}</td>`;
   }).join("") + "</tr>").join("") + "</tbody>";
 
@@ -738,10 +776,10 @@ document.getElementById("chips").addEventListener("click",e=>{
   if(!e.target.classList.contains("chip"))return;
   document.querySelectorAll(".chip").forEach(c=>c.classList.remove("ativo"));
   e.target.classList.add("ativo");
-  filtro=e.target.dataset.f; etapaSel=null; render();
+  filtro=e.target.dataset.f; etapaSel=null; listaAberta=true; render();
 });
 document.getElementById("busca").addEventListener("input",e=>{
-  termo=e.target.value.trim().toLowerCase(); etapaSel=null; render();
+  termo=e.target.value.trim().toLowerCase(); etapaSel=null; listaAberta=true; render();
 });
 
 if(GERADO_EM && !GERADO_EM.includes("__")) document.getElementById("gerado").textContent = "gerado em "+GERADO_EM;

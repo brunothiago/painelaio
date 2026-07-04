@@ -107,9 +107,12 @@ def buscar_banco(conn, cod_tci_por_instr):
         for row in cur.fetchall():
             valores = [_banco_safe(v) for v in row]
             instr = str(row[idx_instr]) if idx_instr is not None and row[idx_instr] is not None else None
-            valores.append(_link_saci(cod_tci_por_instr.get(instr)))
+            link = _link_saci(cod_tci_por_instr.get(instr))
+            # SACI vira a 3ª coluna da planilha (logo após id/instrumento).
+            valores.insert(2, link)
             rows.append(valores)
-    return cols + ["link_saci"], rows
+    cols_out = cols[:2] + ["link_saci"] + cols[2:]
+    return cols_out, rows
 
 
 def buscar_aios(conn, cod_tci_por_instr):
